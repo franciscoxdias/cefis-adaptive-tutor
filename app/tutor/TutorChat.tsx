@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { StubModeBadge } from "../components/Badge";
 
 type Reference =
   | { type: "course" | "track"; id: number; title: string }
@@ -232,9 +233,9 @@ function MessageBubble({ message }: { message: Message }) {
           </div>
         )}
         {!isUser && message.source === "stub" && (
-          <p className="text-[10px] text-zinc-500 dark:text-zinc-500 mt-2 italic">
-            modo limitado (sem LLM ativo)
-          </p>
+          <div className="mt-2">
+            <StubModeBadge />
+          </div>
         )}
       </div>
     </div>

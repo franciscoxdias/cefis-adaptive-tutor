@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { OnboardingPayload } from "../onboarding/OnboardingForm";
+import { CefisRealBadge, StubModeBadge } from "../components/Badge";
 
 type DiagnosticoAnswer = {
   questionId: string;
@@ -104,19 +105,22 @@ export default function PlanoFlow() {
   if (!plan) return <ErrorState message="Sem plano disponível." />;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900">
-        {plan.source === "stub" && (
-          <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200 mb-2">
-            modo limitado · sem LLM ativo
-          </span>
-        )}
-        <p className="text-sm text-zinc-800 dark:text-zinc-200">{plan.summary}</p>
-        <p className="text-xs text-zinc-500 mt-2">
+    <div className="flex flex-col gap-6 fade-in">
+      <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="flex flex-wrap gap-2 mb-3">
+          {plan.source === "stub" ? <StubModeBadge /> : null}
+          {plan.catalogSize !== undefined && plan.catalogSize > 0 ? (
+            <CefisRealBadge
+              label={`${plan.catalogSize} itens do catálogo CEFIS consultados`}
+            />
+          ) : null}
+        </div>
+        <p className="text-sm text-zinc-800 dark:text-zinc-200 leading-relaxed">
+          {plan.summary}
+        </p>
+        <p className="text-xs text-zinc-500 mt-3 flex items-center gap-1.5">
+          <span aria-hidden>⏱</span>
           Tempo total estimado: ~{plan.estimatedTotalMinutes} min
-          {plan.catalogSize !== undefined && (
-            <> · {plan.catalogSize} itens consultados no catálogo CEFIS</>
-          )}
         </p>
       </div>
 
@@ -124,10 +128,10 @@ export default function PlanoFlow() {
         {plan.steps.map((step) => (
           <li
             key={step.order}
-            className="rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-950"
+            className="rounded-xl border border-zinc-200 bg-white p-5 transition hover:border-brand dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-brand"
           >
             <div className="flex items-start gap-3">
-              <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-xs font-semibold text-white shrink-0 dark:bg-white dark:text-zinc-900">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand text-sm font-semibold text-white shrink-0">
                 {step.order}
               </span>
               <div className="flex flex-col gap-2 flex-1 min-w-0">
@@ -137,16 +141,19 @@ export default function PlanoFlow() {
                   </h3>
                   <TypeBadge type={step.type} />
                 </div>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
                   {step.description}
                 </p>
-                <p className="text-xs text-zinc-500">
-                  ~{step.estimatedMinutes} min
+                <p className="text-xs text-zinc-500 flex items-center gap-2 flex-wrap">
+                  <span className="flex items-center gap-1">
+                    <span aria-hidden>⏱</span>
+                    ~{step.estimatedMinutes} min
+                  </span>
                   {step.type === "course" && step.courseId !== null && (
-                    <> · curso CEFIS #{step.courseId}</>
+                    <span className="opacity-70">· curso CEFIS #{step.courseId}</span>
                   )}
                   {step.type === "track" && step.trackId !== null && (
-                    <> · trilha CEFIS #{step.trackId}</>
+                    <span className="opacity-70">· trilha CEFIS #{step.trackId}</span>
                   )}
                 </p>
               </div>
@@ -158,34 +165,46 @@ export default function PlanoFlow() {
       <div className="flex flex-col gap-3 mt-4">
         <Link
           href="/tutor"
-          className="inline-flex items-center justify-center rounded-xl bg-zinc-900 px-5 py-4 text-base font-medium text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+          className="group inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-4 text-base font-medium text-white shadow-lg shadow-brand/20 transition hover:bg-brand-soft hover:shadow-xl"
         >
           Conversar com o tutor
+          <span aria-hidden className="transition group-hover:translate-x-0.5">
+            →
+          </span>
         </Link>
         <Link
-          href="/"
-          className="text-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+          href="/modo-10min"
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-zinc-300 px-4 py-2.5 text-sm font-medium text-foreground transition hover:border-brand hover:text-brand dark:border-zinc-700 dark:hover:border-brand"
         >
-          ← voltar ao início
+          <span aria-hidden>⚡</span>
+          Ver síntese 10 min de um tópico
         </Link>
-        <button
-          type="button"
-          onClick={() => {
-            try {
-              localStorage.removeItem(PLAN_KEY);
-            } catch {
-              // ignore
-            }
-            window.location.reload();
-          }}
-          className="text-center text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-        >
-          regerar plano
-        </button>
+        <div className="flex items-center justify-between mt-1">
+          <Link
+            href="/"
+            className="text-sm text-zinc-500 hover:text-foreground transition"
+          >
+            ← início
+          </Link>
+          <button
+            type="button"
+            onClick={() => {
+              try {
+                localStorage.removeItem(PLAN_KEY);
+              } catch {
+                // ignore
+              }
+              window.location.reload();
+            }}
+            className="text-xs text-zinc-400 hover:text-zinc-700 transition dark:hover:text-zinc-300"
+          >
+            regerar plano
+          </button>
+        </div>
       </div>
 
       {onboarding && (
-        <p className="text-xs text-zinc-400 text-center">
+        <p className="text-xs text-zinc-400 text-center mt-2">
           Plano gerado pra {onboarding.name}.
         </p>
       )}
@@ -195,13 +214,24 @@ export default function PlanoFlow() {
 
 function TypeBadge({ type }: { type: PlanStep["type"] }) {
   const map = {
-    course: { label: "Curso CEFIS", cls: "bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-200" },
-    track: { label: "Trilha CEFIS", cls: "bg-purple-100 text-purple-900 dark:bg-purple-950 dark:text-purple-200" },
-    concept: { label: "Conceito", cls: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200" },
+    course: {
+      label: "Curso CEFIS",
+      cls: "bg-brand-soft text-white dark:bg-brand-soft",
+    },
+    track: {
+      label: "Trilha CEFIS",
+      cls: "bg-accent-soft text-accent dark:bg-accent-soft dark:text-white",
+    },
+    concept: {
+      label: "Conceito",
+      cls: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200",
+    },
   };
   const m = map[type];
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${m.cls}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${m.cls}`}
+    >
       {m.label}
     </span>
   );

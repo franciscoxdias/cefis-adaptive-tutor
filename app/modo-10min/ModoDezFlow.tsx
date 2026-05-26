@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { CefisRealBadge, StubModeBadge } from "../components/Badge";
 
 type Excerpt = {
   courseId: number;
@@ -149,21 +150,18 @@ export default function ModoDezFlow() {
 function ModoDezResult({ result }: { result: ModoDezResponse }) {
   return (
     <article className="flex flex-col gap-5">
-      <header className="flex flex-col gap-2">
+      <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          {result.source === "stub" && (
-            <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-              modo limitado · sem LLM ativo
-            </span>
-          )}
-          <span className="text-xs text-zinc-500">
+          {result.source === "stub" ? <StubModeBadge /> : null}
+          {result.excerpts.length > 0 ? (
+            <CefisRealBadge
+              label={`${result.excerpts.length} trechos de ${countDistinctLessons(result.excerpts)} aulas reais`}
+            />
+          ) : null}
+          <span className="text-xs text-zinc-500 flex items-center gap-1">
+            <span aria-hidden>⏱</span>
             ~{result.estimatedReadingMinutes} min de leitura
           </span>
-          {result.vttFetches !== undefined && result.vttFetches > 0 && (
-            <span className="text-xs text-zinc-400">
-              · {result.excerpts.length} trechos de {countDistinctLessons(result.excerpts)} aulas
-            </span>
-          )}
         </div>
         <h2 className="text-2xl font-semibold leading-tight tracking-tight">
           {result.title}

@@ -1,68 +1,81 @@
 import Link from "next/link";
+import { Brand } from "./components/Brand";
+import { CefisRealBadge } from "./components/Badge";
 
 export default function Home() {
   return (
-    <main className="flex flex-1 flex-col items-center justify-between px-6 py-10 sm:px-10 sm:py-16">
-      <header className="w-full max-w-md flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className="inline-block h-2 w-2 rounded-full bg-emerald-500"
-          />
-          <span className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-            v0.1 — em construção
-          </span>
-        </div>
-        <span className="text-xs text-zinc-400">CEFIS Hackathon</span>
-      </header>
+    <main className="flex flex-1 flex-col px-6 py-8 sm:px-10 sm:py-12">
+      <div className="w-full max-w-md mx-auto flex flex-col gap-10 flex-1">
+        <header className="flex items-center justify-between">
+          <Brand size="md" />
+          <span className="text-xs text-zinc-500">CEFIS Hackathon</span>
+        </header>
 
-      <section className="w-full max-w-md flex flex-col items-start gap-6">
-        <div className="flex flex-col gap-3">
-          <h1 className="text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
-            CEFIS
-            <br />
-            <span className="font-normal text-zinc-500">Adaptive Tutor</span>
-          </h1>
-          <p className="text-lg leading-relaxed text-zinc-600 dark:text-zinc-400">
-            Aprendizado personalizado a partir do conteúdo real da CEFIS.
-            Conta o seu objetivo, recebe um plano de estudos adaptado ao seu
-            nível e tempo disponível.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-3 w-full">
-          <Link
-            href="/onboarding"
-            className="inline-flex items-center justify-center rounded-xl bg-zinc-900 px-5 py-4 text-base font-medium text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
-          >
-            Começar jornada completa
-          </Link>
-          <p className="text-xs text-zinc-500 text-center">
-            Onboarding → diagnóstico → plano → tutor. ~3 minutos.
-          </p>
-
-          <div className="flex items-center gap-3 my-1">
-            <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
-            <span className="text-xs text-zinc-400 uppercase tracking-wider">ou</span>
-            <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+        <section className="flex flex-col gap-7 fade-in flex-1 justify-center">
+          <div className="flex flex-col gap-4">
+            <CefisRealBadge label="ancorado em catálogo e aulas reais da CEFIS" />
+            <h1 className="text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl">
+              Aprenda mais rápido,
+              <br />
+              <span className="text-brand">com o conteúdo</span>
+              <br />
+              que a CEFIS já tem.
+            </h1>
+            <p className="text-lg leading-relaxed text-zinc-600 dark:text-zinc-400">
+              Conta o seu objetivo. O tutor monta um diagnóstico, um plano e
+              responde dúvidas citando trechos de aula reais — com aula e
+              timestamp.
+            </p>
           </div>
 
-          <Link
-            href="/modo-10min"
-            className="inline-flex items-center justify-center rounded-xl border border-zinc-300 bg-white px-5 py-3 text-sm font-medium text-zinc-900 transition hover:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:border-zinc-100"
-          >
-            Tenho 10 minutos
-          </Link>
-          <p className="text-xs text-zinc-500 text-center">
-            Diga o tópico, receba uma síntese com trechos reais de aula.
-          </p>
-        </div>
-      </section>
+          <div className="flex flex-col gap-3">
+            <Link
+              href="/onboarding"
+              className="group inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-4 text-base font-medium text-white shadow-lg shadow-brand/20 transition hover:bg-brand-soft hover:shadow-xl"
+            >
+              Começar jornada completa
+              <span
+                aria-hidden
+                className="transition group-hover:translate-x-0.5"
+              >
+                →
+              </span>
+            </Link>
+            <p className="text-xs text-zinc-500 text-center">
+              Onboarding → Diagnóstico → Plano → Tutor · ~3 minutos
+            </p>
 
-      <footer className="w-full max-w-md flex flex-col gap-1 text-xs text-zinc-400">
-        <span>Projeto desenvolvido para o CEFIS Hackathon</span>
-        <span>26 de maio de 2026</span>
-      </footer>
+            <div className="flex items-center gap-3 my-2">
+              <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+              <span className="text-xs text-zinc-400 uppercase tracking-wider">
+                ou
+              </span>
+              <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+            </div>
+
+            <Link
+              href="/modo-10min"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white/80 backdrop-blur px-5 py-3.5 text-sm font-medium text-foreground transition hover:border-brand hover:text-brand dark:border-zinc-700 dark:bg-zinc-950/60 dark:hover:border-brand"
+            >
+              <span aria-hidden>⚡</span>
+              Tenho 10 minutos
+            </Link>
+            <p className="text-xs text-zinc-500 text-center">
+              Diga o tópico, receba a síntese com trechos de aula.
+            </p>
+          </div>
+        </section>
+
+        <footer className="flex flex-col gap-1.5 text-xs text-zinc-400 border-t border-zinc-200 pt-5 dark:border-zinc-800">
+          <span>
+            Projeto desenvolvido para o{" "}
+            <span className="font-medium text-zinc-600 dark:text-zinc-300">
+              CEFIS Hackathon de Inovação em Aprendizado
+            </span>
+          </span>
+          <span>26 de maio de 2026 · Orlando</span>
+        </footer>
+      </div>
     </main>
   );
 }
