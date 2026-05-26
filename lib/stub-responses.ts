@@ -210,6 +210,64 @@ export function stubTutor(
   };
 }
 
+// ──────────────── Modo "Tenho 10 minutos" stub ────────────────
+
+export function stubModoDez(
+  topic: string,
+  excerpts: TutorExcerpt[]
+): {
+  title: string;
+  summary: string;
+  keyPoints: string[];
+  closing: string;
+  estimatedReadingMinutes: number;
+} {
+  if (excerpts.length === 0) {
+    return {
+      title: `10 minutos sobre ${truncate(topic, 50)}`,
+      summary: `Modo limitado (sem LLM ativo). Não encontrei trechos de aula da CEFIS diretamente relacionados a "${truncate(topic, 100)}". Tente reformular o tópico com palavras-chave mais específicas ou explore o catálogo manualmente.`,
+      keyPoints: [],
+      closing:
+        "Quando o tutor com IA estiver ativo, esta síntese é gerada automaticamente combinando os trechos reais com explicação contextualizada.",
+      estimatedReadingMinutes: 2,
+    };
+  }
+
+  // Resumo: combina os primeiros trechos de forma honesta
+  const intro =
+    `Modo limitado: ainda sem LLM pra gerar uma síntese natural. ` +
+    `Mas encontrei ${excerpts.length} ${excerpts.length === 1 ? "trecho" : "trechos"} reais de ${countDistinctLessons(excerpts)} ${countDistinctLessons(excerpts) === 1 ? "aula" : "aulas"} da CEFIS sobre "${truncate(topic, 80)}".`;
+
+  // Pontos-chave: cada um é um trecho real com prefixo de origem
+  const keyPoints = excerpts.slice(0, 5).map((e) => {
+    return `${truncate(e.text, 220)}  — "${e.lessonTitle}" (curso "${e.courseTitle}", ${e.timestamp})`;
+  });
+
+  const closing =
+    `Esses trechos foram extraídos das legendas oficiais das aulas. Quando o tutor com IA estiver ativo, a síntese fica mais coesa e contextualizada. ` +
+    `Próximo passo: assistir as aulas referenciadas pra aprofundar.`;
+
+  // Estimativa: ~150 palavras por minuto · cada excerpt ~30-50 palavras
+  const wordCount = excerpts.reduce(
+    (acc, e) => acc + e.text.split(/\s+/).length,
+    intro.split(/\s+/).length + closing.split(/\s+/).length
+  );
+  const minutes = Math.max(2, Math.min(10, Math.round(wordCount / 150)));
+
+  return {
+    title: `10 minutos sobre ${truncate(topic, 50)}`,
+    summary: intro,
+    keyPoints,
+    closing,
+    estimatedReadingMinutes: minutes,
+  };
+}
+
+function countDistinctLessons(excerpts: TutorExcerpt[]): number {
+  const ids = new Set(excerpts.map((e) => e.lessonId));
+  return ids.size;
+}
+
 // ──────────────── helpers ────────────────
 
 function truncate(s: string, n: number): string {

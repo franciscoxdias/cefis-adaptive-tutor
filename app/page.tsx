@@ -35,10 +35,26 @@ export default function Home() {
             href="/onboarding"
             className="inline-flex items-center justify-center rounded-xl bg-zinc-900 px-5 py-4 text-base font-medium text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
           >
-            Começar
+            Começar jornada completa
           </Link>
           <p className="text-xs text-zinc-500 text-center">
-            Onboarding em menos de 1 minuto.
+            Onboarding → diagnóstico → plano → tutor. ~3 minutos.
+          </p>
+
+          <div className="flex items-center gap-3 my-1">
+            <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+            <span className="text-xs text-zinc-400 uppercase tracking-wider">ou</span>
+            <div className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+          </div>
+
+          <Link
+            href="/modo-10min"
+            className="inline-flex items-center justify-center rounded-xl border border-zinc-300 bg-white px-5 py-3 text-sm font-medium text-zinc-900 transition hover:border-zinc-900 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:border-zinc-100"
+          >
+            Tenho 10 minutos
+          </Link>
+          <p className="text-xs text-zinc-500 text-center">
+            Diga o tópico, receba uma síntese com trechos reais de aula.
           </p>
         </div>
       </section>

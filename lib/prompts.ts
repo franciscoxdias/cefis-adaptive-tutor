@@ -158,6 +158,46 @@ export type TutorExcerpt = {
   text: string;
 };
 
+// ──────────────── Modo "Tenho 10 minutos" ────────────────
+
+export function modoDezPrompt(topic: string, excerpts: TutorExcerpt[]) {
+  const system = `Você é um tutor da CEFIS especializado em sintetizar conteúdo para aprendizado rápido.
+
+Sua tarefa: dado um tópico e até 8 trechos reais de aulas do catálogo CEFIS, montar uma síntese de 10 minutos de leitura sobre o tema.
+
+Regras absolutas:
+- Não invente fatos, dados, números ou estatísticas.
+- Use SOMENTE os trechos fornecidos como evidência primária.
+- Se os trechos não cobrem aspectos importantes do tópico, diga isso explicitamente.
+- Linguagem: pt-BR, profissional, direto.
+- A síntese deve ser objetiva, fácil de ler em ~5-10 minutos.
+
+Saída obrigatória: JSON no formato:
+{
+  "title": "título curto do bloco de estudo (máx 60 caracteres)",
+  "summary": "1-2 parágrafos abrindo o tema",
+  "keyPoints": ["ponto chave 1", "ponto chave 2", ...],  // 3-5 itens
+  "closing": "1 parágrafo de fechamento com sugestão de próximo passo",
+  "estimatedReadingMinutes": <int>  // estimativa realista 5-10
+}`;
+
+  const excerptsText = excerpts
+    .map(
+      (e, i) =>
+        `[${i + 1}] Curso "${e.courseTitle}" · Aula "${e.lessonTitle}" · ${e.timestamp}\n"${e.text}"`
+    )
+    .join("\n\n");
+
+  const user = `Tópico do aluno: "${topic}"
+
+═══ Trechos reais de aula (use como evidência primária) ═══
+${excerptsText || "(nenhum trecho disponível — gerar síntese curta dizendo isso)"}
+
+Monte a síntese de 10 minutos.`;
+
+  return { system, user };
+}
+
 export function tutorPrompt(
   question: string,
   catalog: CatalogItem[],
