@@ -69,3 +69,43 @@ export function GroundedBadge() {
     </Badge>
   );
 }
+
+/**
+ * Badge para quando o conteúdo é material complementar gerado por IA
+ * (tópico fora da cobertura direta do catálogo CEFIS).
+ * Honestidade explícita pro aluno saber que não veio do catálogo.
+ */
+export function AIComplementaryBadge() {
+  return (
+    <Badge variant="brand">
+      <span aria-hidden>✦</span>
+      Material complementar gerado por IA
+    </Badge>
+  );
+}
+
+/**
+ * Badge para quando há conteúdos CEFIS relacionados (não diretos) mas o
+ * material principal foi complementado por IA.
+ */
+export function CefisRelatedBadge() {
+  return (
+    <Badge variant="default">
+      <span aria-hidden>○</span>
+      Conteúdo CEFIS relacionado
+    </Badge>
+  );
+}
+
+/**
+ * Helper: dado o coverage, devolve a badge apropriada.
+ */
+export function CoverageBadge({
+  coverage,
+}: {
+  coverage?: "cefis" | "cefis-related" | "ai-complementary";
+}) {
+  if (coverage === "ai-complementary") return <AIComplementaryBadge />;
+  if (coverage === "cefis-related") return <CefisRelatedBadge />;
+  return <GroundedBadge />;
+}

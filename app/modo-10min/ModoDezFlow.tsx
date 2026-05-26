@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CefisRealBadge, GroundedBadge } from "../components/Badge";
+import { CefisRealBadge, CoverageBadge } from "../components/Badge";
 
 type Excerpt = {
   courseId: number;
@@ -21,6 +21,7 @@ type ModoDezResponse = {
   topic: string;
   excerpts: Excerpt[];
   source: "llm" | "stub";
+  coverage?: "cefis" | "cefis-related" | "ai-complementary";
   usedSearchTerm?: string | null;
   vttFetches?: number;
 };
@@ -170,7 +171,7 @@ function ModoDezResult({ result }: { result: ModoDezResponse }) {
     <article className="flex flex-col gap-5">
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <GroundedBadge />
+          <CoverageBadge coverage={result.coverage} />
           {result.excerpts.length > 0 ? (
             <CefisRealBadge
               label={`${result.excerpts.length} trechos de ${countDistinctLessons(result.excerpts)} aulas reais`}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { GroundedBadge } from "../components/Badge";
+import { CoverageBadge } from "../components/Badge";
 
 type Reference =
   | { type: "course" | "track"; id: number; title: string }
@@ -28,6 +28,7 @@ type Message = {
   references?: Reference[];
   excerpts?: Excerpt[];
   source?: "llm" | "stub";
+  coverage?: "cefis" | "cefis-related" | "ai-complementary";
 };
 
 const HISTORY_KEY = "cefis-tutor:tutor-history";
@@ -102,6 +103,7 @@ export default function TutorChat() {
         references: data.references ?? [],
         excerpts: Array.isArray(data.excerpts) ? data.excerpts : [],
         source: data.source,
+        coverage: data.coverage,
       };
 
       setMessages((prev) => [...prev, assistant]);
@@ -268,7 +270,7 @@ function MessageBubble({ message }: { message: Message }) {
         )}
         {!isUser && (
           <div className="mt-2">
-            <GroundedBadge />
+            <CoverageBadge coverage={message.coverage} />
           </div>
         )}
       </div>

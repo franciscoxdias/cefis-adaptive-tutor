@@ -239,6 +239,17 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Coverage classification:
+  // - "cefis": há trechos reais de aula → resposta ancorada
+  // - "cefis-related": há catálogo mas sem trechos específicos
+  // - "ai-complementary": nada relacionado no catálogo → material gerado por IA
+  const coverage: "cefis" | "cefis-related" | "ai-complementary" =
+    excerpts.length > 0
+      ? "cefis"
+      : catalog.filter((c) => c.type === "course").length > 0
+        ? "cefis-related"
+        : "ai-complementary";
+
   // ──── 3. Tentar LLM, cair pra stub ────
   try {
     const messages = tutorPrompt(question, catalog, history, excerpts);
@@ -254,7 +265,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       answer: result.answer,
       references: Array.isArray(result.references) ? result.references : [],
-      excerpts, // expostos pra UI mostrar painel "trechos consultados"
+      excerpts,
+      coverage,
       source: "llm",
       cefisError,
       catalogSize: catalog.length,
@@ -272,6 +284,7 @@ export async function POST(req: NextRequest) {
       answer: stub.answer,
       references: stub.references,
       excerpts,
+      coverage,
       source: "stub",
       llmError,
       cefisError,

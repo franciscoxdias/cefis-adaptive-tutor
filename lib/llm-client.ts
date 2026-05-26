@@ -1,18 +1,22 @@
 /**
  * Cliente LLM neutro server-side.
  *
- * Suporta OpenAI e Anthropic com a mesma interface. Detecta provider
- * via env vars (LLM_PROVIDER explícito, ou OPENAI_API_KEY/ANTHROPIC_API_KEY
- * implícito).
+ * Suporta:
+ *  - OpenAI (api.openai.com/v1)
+ *  - Anthropic (api.anthropic.com)
+ *  - Groq (api.groq.com/openai/v1) — OpenAI-compatible
+ *  - Qualquer provider OpenAI-compatible via LLM_BASE_URL custom
  *
- * Modos:
- *  - chat({ system, user }) → string
- *  - chatJson<T>({ system, user, schemaHint }) → T (resposta parseada como JSON)
+ * Auto-detecta provider via env vars na ordem:
+ *  1. LLM_PROVIDER explícito (groq | openai | anthropic)
+ *  2. GROQ_API_KEY presente
+ *  3. OPENAI_API_KEY presente
+ *  4. ANTHROPIC_API_KEY presente
  *
- * Sem SDK externo — usa fetch direto pra manter bundle leve.
+ * Sem SDK externo — fetch direto pra manter bundle leve.
  */
 
-export type LLMProvider = "openai" | "anthropic";
+export type LLMProvider = "openai" | "anthropic" | "groq";
 
 export type ChatMessage = {
   system: string;
@@ -22,42 +26,68 @@ export type ChatMessage = {
 export type ChatOptions = {
   temperature?: number;
   maxTokens?: number;
-  // Override do provider auto-detectado
   provider?: LLMProvider;
-  // Override do model
   model?: string;
 };
 
 const DEFAULT_MODELS: Record<LLMProvider, string> = {
   openai: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
   anthropic: process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5-20251001",
+  groq: process.env.LLM_MODEL ?? "llama-3.3-70b-versatile",
 };
 
 function detectProvider(override?: LLMProvider): LLMProvider {
   if (override) return override;
   const explicit = process.env.LLM_PROVIDER?.toLowerCase();
-  if (explicit === "openai" || explicit === "anthropic") return explicit;
+  if (explicit === "openai" || explicit === "anthropic" || explicit === "groq") {
+    return explicit;
+  }
 
   // Auto-detect por presença de key
+  if (process.env.GROQ_API_KEY) return "groq";
   if (process.env.OPENAI_API_KEY) return "openai";
   if (process.env.ANTHROPIC_API_KEY) return "anthropic";
 
   throw new Error(
-    "Nenhuma LLM key configurada. Defina OPENAI_API_KEY ou ANTHROPIC_API_KEY em .env.local."
+    "Nenhuma LLM key configurada. Defina GROQ_API_KEY, OPENAI_API_KEY ou ANTHROPIC_API_KEY."
   );
 }
 
-// ──────────────── OpenAI ────────────────
+// ──────────────── OpenAI-compatible (OpenAI + Groq) ────────────────
 
-async function chatOpenAI(
+type OpenAICompatibleConfig = {
+  apiKey: string;
+  baseURL: string;
+  model: string;
+};
+
+function getOpenAIConfig(): OpenAICompatibleConfig {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) throw new Error("OPENAI_API_KEY ausente.");
+  return {
+    apiKey: key,
+    baseURL: process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1",
+    model: DEFAULT_MODELS.openai,
+  };
+}
+
+function getGroqConfig(): OpenAICompatibleConfig {
+  const key = process.env.GROQ_API_KEY;
+  if (!key) throw new Error("GROQ_API_KEY ausente.");
+  return {
+    apiKey: key,
+    baseURL: process.env.LLM_BASE_URL ?? "https://api.groq.com/openai/v1",
+    model: DEFAULT_MODELS.groq,
+  };
+}
+
+async function chatOpenAICompatible(
+  config: OpenAICompatibleConfig,
   messages: ChatMessage,
   options: ChatOptions,
   jsonMode: boolean
 ): Promise<string> {
-  const key = process.env.OPENAI_API_KEY;
-  if (!key) throw new Error("OPENAI_API_KEY ausente.");
-
-  const model = options.model ?? DEFAULT_MODELS.openai;
+  const model = options.model ?? config.model;
 
   const body: Record<string, unknown> = {
     model,
@@ -73,24 +103,27 @@ async function chatOpenAI(
     body.response_format = { type: "json_object" };
   }
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+  const res = await fetch(`${config.baseURL}/chat/completions`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
+      Authorization: `Bearer ${config.apiKey}`,
+      "Content-Type": "application/json; charset=utf-8",
+      Accept: "application/json",
     },
     body: JSON.stringify(body),
   });
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`OpenAI ${res.status}: ${text.slice(0, 400)}`);
+    throw new Error(
+      `LLM ${res.status} @ ${config.baseURL}: ${text.slice(0, 400)}`
+    );
   }
 
   const json = await res.json();
   const content = json?.choices?.[0]?.message?.content;
   if (typeof content !== "string") {
-    throw new Error("OpenAI: resposta sem content");
+    throw new Error("LLM: resposta sem content");
   }
   return content;
 }
@@ -119,7 +152,8 @@ async function chatAnthropic(
     headers: {
       "x-api-key": key,
       "anthropic-version": "2023-06-01",
-      "Content-Type": "application/json",
+      "Content-Type": "application/json; charset=utf-8",
+      Accept: "application/json",
     },
     body: JSON.stringify(body),
   });
@@ -145,15 +179,17 @@ export async function chat(
   options: ChatOptions = {}
 ): Promise<string> {
   const provider = detectProvider(options.provider);
-  if (provider === "openai") return chatOpenAI(messages, options, false);
+  if (provider === "groq") {
+    return chatOpenAICompatible(getGroqConfig(), messages, options, false);
+  }
+  if (provider === "openai") {
+    return chatOpenAICompatible(getOpenAIConfig(), messages, options, false);
+  }
   return chatAnthropic(messages, options);
 }
 
 /**
  * Pede ao LLM resposta em JSON. Tenta parsear. Throw se não for JSON válido.
- *
- * Pra OpenAI usa response_format json_object.
- * Pra Anthropic depende do system prompt instruir JSON-only.
  */
 export async function chatJson<T = unknown>(
   messages: ChatMessage,
@@ -170,13 +206,14 @@ export async function chatJson<T = unknown>(
   };
 
   let raw: string;
-  if (provider === "openai") {
-    raw = await chatOpenAI(reinforced, options, true);
+  if (provider === "groq") {
+    raw = await chatOpenAICompatible(getGroqConfig(), reinforced, options, true);
+  } else if (provider === "openai") {
+    raw = await chatOpenAICompatible(getOpenAIConfig(), reinforced, options, true);
   } else {
     raw = await chatAnthropic(reinforced, options);
   }
 
-  // Fallback: extrair JSON se vier embrulhado em markdown
   const trimmed = raw.trim();
   const jsonText = extractJson(trimmed);
 
@@ -190,7 +227,6 @@ export async function chatJson<T = unknown>(
 }
 
 function extractJson(text: string): string {
-  // Se vier ```json ... ``` extrai o miolo
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fenced) return fenced[1].trim();
   return text;

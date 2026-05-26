@@ -184,6 +184,14 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Coverage classification:
+  const coverage: "cefis" | "cefis-related" | "ai-complementary" =
+    excerpts.length > 0
+      ? "cefis"
+      : coursesData.length > 0
+        ? "cefis-related"
+        : "ai-complementary";
+
   // ──── 3. LLM ou stub ────
   try {
     const messages = modoDezPrompt(topic, excerpts);
@@ -203,6 +211,7 @@ export async function POST(req: NextRequest) {
       ...result,
       topic,
       excerpts,
+      coverage,
       source: "llm",
       cefisError,
       usedSearchTerm,
@@ -218,6 +227,7 @@ export async function POST(req: NextRequest) {
       ...stub,
       topic,
       excerpts,
+      coverage,
       source: "stub",
       llmError,
       cefisError,
