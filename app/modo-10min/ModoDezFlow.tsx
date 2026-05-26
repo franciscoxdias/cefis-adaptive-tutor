@@ -12,6 +12,12 @@ type Excerpt = {
   text: string;
 };
 
+type RecommendedSource = {
+  title: string;
+  type: string;
+  note?: string;
+};
+
 type ModoDezResponse = {
   title: string;
   summary: string;
@@ -24,6 +30,13 @@ type ModoDezResponse = {
   coverage?: "cefis" | "cefis-related" | "ai-complementary";
   usedSearchTerm?: string | null;
   vttFetches?: number;
+  // Campos extras de aula complementar (presentes quando coverage=ai-complementary)
+  objective?: string;
+  explanation?: string;
+  practicalExample?: string;
+  exercise?: string[];
+  recommendedSources?: RecommendedSource[];
+  advisory?: string;
 };
 
 const ONBOARDING_KEY = "cefis-tutor:onboarding";
@@ -167,6 +180,15 @@ export default function ModoDezFlow() {
 }
 
 function ModoDezResult({ result }: { result: ModoDezResponse }) {
+  const isComplementary = result.coverage === "ai-complementary";
+  const hasComplementaryExtras =
+    isComplementary &&
+    (result.objective ||
+      result.explanation ||
+      result.practicalExample ||
+      (result.exercise && result.exercise.length > 0) ||
+      (result.recommendedSources && result.recommendedSources.length > 0));
+
   return (
     <article className="flex flex-col gap-5">
       <header className="flex flex-col gap-3">
@@ -177,7 +199,7 @@ function ModoDezResult({ result }: { result: ModoDezResponse }) {
               label={`${result.excerpts.length} trechos de ${countDistinctLessons(result.excerpts)} aulas reais`}
             />
           ) : null}
-          <span className="text-xs text-zinc-500 flex items-center gap-1">
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
             <span aria-hidden>⏱</span>
             ~{result.estimatedReadingMinutes} min de leitura
           </span>
@@ -187,25 +209,131 @@ function ModoDezResult({ result }: { result: ModoDezResponse }) {
         </h2>
       </header>
 
-      <p className="text-base leading-relaxed text-zinc-700 dark:text-zinc-300 whitespace-pre-wrap">
+      <p className="text-base leading-relaxed text-foreground/90 whitespace-pre-wrap">
         {result.summary}
       </p>
 
-      {result.keyPoints.length > 0 && (
+      {/* Estrutura de aula complementar — só quando ai-complementary + LLM ativo */}
+      {hasComplementaryExtras && (
+        <div className="glow-card rounded-xl p-5 sm:p-6 flex flex-col gap-5 border-l-2 border-l-accent">
+          <div className="flex items-center gap-2 text-accent font-semibold text-xs uppercase tracking-wider">
+            <span aria-hidden>✦</span>
+            Aula complementar personalizada gerada por IA
+          </div>
+
+          {result.objective && (
+            <Section number={1} title="Objetivo da aula">
+              <p className="text-sm text-foreground/90 leading-relaxed">
+                {result.objective}
+              </p>
+            </Section>
+          )}
+
+          {result.explanation && (
+            <Section number={2} title="Explicação estruturada">
+              <div className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                {result.explanation}
+              </div>
+            </Section>
+          )}
+
+          {result.keyPoints.length > 0 && (
+            <Section number={3} title="Pontos-chave">
+              <ul className="flex flex-col gap-2">
+                {result.keyPoints.map((p, i) => (
+                  <li
+                    key={i}
+                    className="text-sm text-foreground/90 leading-relaxed flex gap-2"
+                  >
+                    <span aria-hidden className="text-brand shrink-0">
+                      ▸
+                    </span>
+                    <span>{p}</span>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+
+          {result.practicalExample && (
+            <Section number={4} title="Exemplo prático">
+              <p className="text-sm text-foreground/90 leading-relaxed">
+                {result.practicalExample}
+              </p>
+            </Section>
+          )}
+
+          {result.exercise && result.exercise.length > 0 && (
+            <Section number={5} title="Exercício / Checklist">
+              <ul className="flex flex-col gap-2">
+                {result.exercise.map((e, i) => (
+                  <li
+                    key={i}
+                    className="text-sm text-foreground/90 leading-relaxed flex gap-2"
+                  >
+                    <span aria-hidden className="text-accent shrink-0 mt-0.5">
+                      ☐
+                    </span>
+                    <span>{e}</span>
+                  </li>
+                ))}
+              </ul>
+            </Section>
+          )}
+
+          {result.recommendedSources && result.recommendedSources.length > 0 && (
+            <Section number={6} title="Fontes recomendadas para validação">
+              <ul className="flex flex-col gap-2">
+                {result.recommendedSources.map((s, i) => (
+                  <li key={i} className="text-sm">
+                    <span className="font-medium text-foreground">
+                      {s.title}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {" "}· {s.type}
+                    </span>
+                    {s.note && (
+                      <span className="text-muted-foreground/80 block text-xs mt-0.5">
+                        {s.note}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-muted-foreground mt-2 italic">
+                Fontes amplamente reconhecidas, sugeridas como ponto de partida
+                para validação independente. O sistema não consulta esses
+                materiais automaticamente.
+              </p>
+            </Section>
+          )}
+
+          {result.advisory && (
+            <div className="border-t border-border pt-4">
+              <div className="flex gap-2 text-xs text-muted-foreground items-start">
+                <span aria-hidden className="text-accent shrink-0 mt-0.5">
+                  ⚠
+                </span>
+                <p className="leading-relaxed">{result.advisory}</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Modo CEFIS grounded — mantém layout original com keyPoints */}
+      {!hasComplementaryExtras && result.keyPoints.length > 0 && (
         <section className="flex flex-col gap-3">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Pontos-chave
           </h3>
           <ol className="flex flex-col gap-3">
             {result.keyPoints.map((point, i) => (
-              <li
-                key={i}
-                className="glow-card flex gap-3 rounded-lg p-4"
-              >
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-900 text-xs font-semibold text-white shrink-0 dark:bg-white dark:text-zinc-900">
+              <li key={i} className="glow-card flex gap-3 rounded-lg p-4">
+                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-brand text-xs font-semibold text-brand-foreground shrink-0">
                   {i + 1}
                 </span>
-                <p className="text-sm text-zinc-800 dark:text-zinc-200 leading-relaxed">
+                <p className="text-sm text-foreground/90 leading-relaxed">
                   {point}
                 </p>
               </li>
@@ -216,10 +344,10 @@ function ModoDezResult({ result }: { result: ModoDezResponse }) {
 
       {result.excerpts.length > 0 && result.source === "llm" && (
         <section className="flex flex-col gap-2">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-zinc-500">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
             Trechos consultados ({result.excerpts.length})
           </h3>
-          <ul className="flex flex-col gap-1 text-xs text-zinc-600 dark:text-zinc-400">
+          <ul className="flex flex-col gap-1 text-xs text-muted-foreground">
             {result.excerpts.map((e, i) => (
               <li key={i}>
                 <span className="opacity-60 mr-1">
@@ -233,12 +361,32 @@ function ModoDezResult({ result }: { result: ModoDezResponse }) {
         </section>
       )}
 
-      <footer className="rounded-lg border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900">
-        <p className="text-sm text-zinc-700 dark:text-zinc-300">
-          {result.closing}
-        </p>
+      <footer className="glow-card rounded-lg p-5">
+        <p className="text-sm text-foreground/90">{result.closing}</p>
       </footer>
     </article>
+  );
+}
+
+function Section({
+  number,
+  title,
+  children,
+}: {
+  number: number;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <h3 className="flex items-center gap-2 text-sm font-bold tracking-tight">
+        <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-soft text-brand text-[10px] font-bold shrink-0">
+          {number}
+        </span>
+        {title}
+      </h3>
+      <div>{children}</div>
+    </div>
   );
 }
 

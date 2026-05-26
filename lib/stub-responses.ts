@@ -212,6 +212,15 @@ export function stubTutor(
 
 // ──────────────── Modo "Tenho 10 minutos" stub ────────────────
 
+export type ComplementaryLessonExtras = {
+  objective?: string;
+  explanation?: string;
+  practicalExample?: string;
+  exercise?: string[];
+  recommendedSources?: Array<{ title: string; type: string; note?: string }>;
+  advisory?: string;
+};
+
 export function stubModoDez(
   topic: string,
   excerpts: TutorExcerpt[]
@@ -221,15 +230,18 @@ export function stubModoDez(
   keyPoints: string[];
   closing: string;
   estimatedReadingMinutes: number;
-} {
+} & ComplementaryLessonExtras {
   if (excerpts.length === 0) {
     return {
-      title: `10 minutos sobre ${truncate(topic, 50)}`,
-      summary: `Modo limitado (sem LLM ativo). Não encontrei trechos de aula da CEFIS diretamente relacionados a "${truncate(topic, 100)}". Tente reformular o tópico com palavras-chave mais específicas ou explore o catálogo manualmente.`,
+      title: `Material complementar: ${truncate(topic, 50)}`,
+      summary: `Não encontrei cobertura direta no catálogo CEFIS para este tópico. Sem LLM ativo, não posso gerar material complementar elaborado agora. Tente reformular o tópico ou volte quando o tutor com IA estiver ativo.`,
       keyPoints: [],
       closing:
-        "Quando o tutor com IA estiver ativo, esta síntese é gerada automaticamente combinando os trechos reais com explicação contextualizada.",
+        "Sugestão: explore o catálogo CEFIS por temas adjacentes.",
       estimatedReadingMinutes: 2,
+      objective: `Aprender o essencial sobre "${truncate(topic, 80)}" em ~10 minutos.`,
+      advisory:
+        "Este conteúdo seria material complementar gerado por IA, não aula oficial CEFIS. No modo atual (sem LLM), apenas a estrutura é mostrada.",
     };
   }
 
