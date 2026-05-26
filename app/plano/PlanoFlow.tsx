@@ -142,7 +142,7 @@ export default function PlanoFlow() {
         {plan.steps.map((step) => (
           <li
             key={step.order}
-            className="rounded-xl border border-zinc-200 bg-white p-5 transition hover:border-brand dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-brand"
+            className="glow-card rounded-xl p-5"
           >
             <div className="flex items-start gap-3">
               <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand text-sm font-semibold text-white shrink-0">
