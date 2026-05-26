@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CefisRealBadge, StubModeBadge } from "../components/Badge";
+import { CefisRealBadge, GroundedBadge } from "../components/Badge";
 
 type Excerpt = {
   courseId: number;
@@ -41,14 +41,21 @@ export default function ModoDezFlow() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ModoDezResponse | null>(null);
 
-  // Pré-popular com objective do onboarding se existir
+  // Não pré-popula automaticamente. Deixa o aluno escolher o tópico
+  // de forma intencional pra não parecer bug ou "entrada já preenchida".
+  // Se quiser reaproveitar o objective do onboarding, oferece como
+  // sugestão clicável separada.
+  const [suggestedFromOnboarding, setSuggestedFromOnboarding] = useState<
+    string | null
+  >(null);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(ONBOARDING_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed?.objective && typeof parsed.objective === "string") {
-          setTopic(parsed.objective.slice(0, 80));
+          setSuggestedFromOnboarding(parsed.objective.slice(0, 80));
         }
       }
     } catch {
@@ -105,6 +112,17 @@ export default function ModoDezFlow() {
         />
 
         <div className="flex flex-wrap gap-1.5">
+          {suggestedFromOnboarding && (
+            <button
+              type="button"
+              onClick={() => pickSuggested(suggestedFromOnboarding)}
+              disabled={loading}
+              className="text-xs px-2.5 py-1 rounded-full border border-brand text-brand hover:bg-brand hover:text-white transition disabled:opacity-50"
+              title="Reaproveitar o objetivo do onboarding"
+            >
+              ↻ usar meu objetivo
+            </button>
+          )}
           {SUGGESTED_TOPICS.map((s) => (
             <button
               key={s}
@@ -152,7 +170,7 @@ function ModoDezResult({ result }: { result: ModoDezResponse }) {
     <article className="flex flex-col gap-5">
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          {result.source === "stub" ? <StubModeBadge /> : null}
+          <GroundedBadge />
           {result.excerpts.length > 0 ? (
             <CefisRealBadge
               label={`${result.excerpts.length} trechos de ${countDistinctLessons(result.excerpts)} aulas reais`}

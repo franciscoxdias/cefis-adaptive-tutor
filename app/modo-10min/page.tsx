@@ -12,7 +12,7 @@ export const metadata = {
 export default function ModoDezPage() {
   return (
     <main className="flex flex-1 flex-col px-6 py-8 sm:px-10 sm:py-12">
-      <div className="w-full max-w-md mx-auto flex flex-col gap-8 fade-in">
+      <div className="w-full max-w-md sm:max-w-2xl lg:max-w-3xl mx-auto flex flex-col gap-8 fade-in">
         <header className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <Brand size="sm" />

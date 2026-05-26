@@ -17,8 +17,7 @@ export function Badge({
   const styles: Record<BadgeVariant, string> = {
     default:
       "bg-zinc-100 text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300",
-    brand:
-      "bg-brand-soft text-white dark:bg-brand-soft dark:text-white",
+    brand: "bg-brand-soft text-white dark:bg-brand-soft dark:text-white",
     accent:
       "bg-accent-soft text-accent dark:bg-accent-soft dark:text-white",
     warning:
@@ -41,22 +40,32 @@ export function Badge({
  * vindo direto do catálogo / transcrições da CEFIS. Sinaliza pro avaliador
  * "isso é dado real, não inventado".
  */
-export function CefisRealBadge({ label = "conteúdo CEFIS real" }: { label?: string }) {
+export function CefisRealBadge({
+  label = "conteúdo CEFIS real",
+}: {
+  label?: string;
+}) {
   return (
     <Badge variant="accent">
-      <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-current" />
+      <span
+        aria-hidden
+        className="inline-block h-1.5 w-1.5 rounded-full bg-current"
+      />
       {label}
     </Badge>
   );
 }
 
 /**
- * Badge especializada pra avisar honestamente que estamos sem LLM ativo.
+ * Badge positiva pra reforçar que a resposta foi ancorada em aulas/trechos
+ * reais da CEFIS — mesmo quando o LLM externo não está ativo.
+ * Substitui o antigo "modo limitado" que assustava sem agregar.
  */
-export function StubModeBadge() {
+export function GroundedBadge() {
   return (
-    <Badge variant="warning">
-      modo limitado · sem LLM ativo
+    <Badge variant="accent">
+      <span aria-hidden>●</span>
+      Ancorada em aulas reais
     </Badge>
   );
 }

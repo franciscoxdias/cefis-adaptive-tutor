@@ -254,6 +254,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       answer: result.answer,
       references: Array.isArray(result.references) ? result.references : [],
+      excerpts, // expostos pra UI mostrar painel "trechos consultados"
       source: "llm",
       cefisError,
       catalogSize: catalog.length,
@@ -270,6 +271,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       answer: stub.answer,
       references: stub.references,
+      excerpts,
       source: "stub",
       llmError,
       cefisError,

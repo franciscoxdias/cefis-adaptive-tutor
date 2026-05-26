@@ -5,7 +5,7 @@ import { CefisRealBadge } from "./components/Badge";
 export default function Home() {
   return (
     <main className="flex flex-1 flex-col px-6 py-8 sm:px-10 sm:py-12">
-      <div className="w-full max-w-md mx-auto flex flex-col gap-10 flex-1">
+      <div className="w-full max-w-md sm:max-w-2xl lg:max-w-3xl mx-auto flex flex-col gap-10 flex-1">
         <header className="flex items-center justify-between">
           <Brand size="md" />
           <span className="text-xs text-zinc-500">CEFIS Hackathon</span>

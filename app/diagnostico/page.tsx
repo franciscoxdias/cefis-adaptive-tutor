@@ -10,7 +10,7 @@ export const metadata = {
 export default function DiagnosticoPage() {
   return (
     <main className="flex flex-1 flex-col px-6 py-8 sm:px-10 sm:py-12">
-      <div className="w-full max-w-md mx-auto flex flex-col gap-8 fade-in">
+      <div className="w-full max-w-md sm:max-w-2xl mx-auto flex flex-col gap-8 fade-in">
         <header className="flex flex-col gap-4">
           <Brand size="sm" />
           <Stepper current={2} />

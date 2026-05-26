@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { StubModeBadge } from "../components/Badge";
+import { GroundedBadge } from "../components/Badge";
 
 type Reference =
   | { type: "course" | "track"; id: number; title: string }
@@ -13,10 +13,20 @@ type Reference =
       timestamp?: string;
     };
 
+type Excerpt = {
+  courseId: number;
+  courseTitle: string;
+  lessonId: number;
+  lessonTitle: string;
+  timestamp: string;
+  text: string;
+};
+
 type Message = {
   role: "user" | "assistant";
   content: string;
   references?: Reference[];
+  excerpts?: Excerpt[];
   source?: "llm" | "stub";
 };
 
@@ -90,6 +100,7 @@ export default function TutorChat() {
         role: "assistant",
         content: data.answer ?? "(sem resposta)",
         references: data.references ?? [],
+        excerpts: Array.isArray(data.excerpts) ? data.excerpts : [],
         source: data.source,
       };
 
@@ -232,9 +243,32 @@ function MessageBubble({ message }: { message: Message }) {
             </ul>
           </div>
         )}
-        {!isUser && message.source === "stub" && (
+        {!isUser && message.excerpts && message.excerpts.length > 0 && (
+          <details className="mt-3 group">
+            <summary className="cursor-pointer text-xs font-medium text-zinc-600 dark:text-zinc-400 list-none flex items-center gap-1.5">
+              <span className="inline-block transition group-open:rotate-90">▸</span>
+              Trechos consultados ({message.excerpts.length})
+            </summary>
+            <ul className="mt-2 flex flex-col gap-2 pl-3 border-l-2 border-accent/40">
+              {message.excerpts.slice(0, 6).map((e, i) => (
+                <li
+                  key={`${e.lessonId}-${e.timestamp}-${i}`}
+                  className="text-xs"
+                >
+                  <p className="italic text-zinc-700 dark:text-zinc-300">
+                    &ldquo;{e.text}&rdquo;
+                  </p>
+                  <p className="text-[10px] text-zinc-500 mt-0.5">
+                    — aula &ldquo;{e.lessonTitle}&rdquo; · curso &ldquo;{e.courseTitle}&rdquo; · {e.timestamp}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+        {!isUser && (
           <div className="mt-2">
-            <StubModeBadge />
+            <GroundedBadge />
           </div>
         )}
       </div>

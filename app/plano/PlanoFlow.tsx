@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import type { OnboardingPayload } from "../onboarding/OnboardingForm";
-import { CefisRealBadge, StubModeBadge } from "../components/Badge";
+import { CefisRealBadge, GroundedBadge } from "../components/Badge";
+import { humanizeMinutes, paceEstimate } from "@/lib/format";
 
 type DiagnosticoAnswer = {
   questionId: string;
@@ -108,20 +109,33 @@ export default function PlanoFlow() {
     <div className="flex flex-col gap-6 fade-in">
       <div className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         <div className="flex flex-wrap gap-2 mb-3">
-          {plan.source === "stub" ? <StubModeBadge /> : null}
+          <GroundedBadge />
           {plan.catalogSize !== undefined && plan.catalogSize > 0 ? (
             <CefisRealBadge
-              label={`${plan.catalogSize} itens do catálogo CEFIS consultados`}
+              label={`${plan.catalogSize} itens do catálogo consultados`}
             />
           ) : null}
         </div>
         <p className="text-sm text-zinc-800 dark:text-zinc-200 leading-relaxed">
           {plan.summary}
         </p>
-        <p className="text-xs text-zinc-500 mt-3 flex items-center gap-1.5">
-          <span aria-hidden>⏱</span>
-          Tempo total estimado: ~{plan.estimatedTotalMinutes} min
-        </p>
+        <div className="text-xs text-zinc-500 mt-3 flex flex-col gap-1">
+          <span className="flex items-center gap-1.5">
+            <span aria-hidden>⏱</span>
+            Tempo total estimado: {humanizeMinutes(plan.estimatedTotalMinutes)}
+          </span>
+          {onboarding?.timePerDay
+            ? (() => {
+                const pace = paceEstimate(
+                  plan.estimatedTotalMinutes,
+                  onboarding.timePerDay
+                );
+                return pace ? (
+                  <span className="text-zinc-400">{pace}</span>
+                ) : null;
+              })()
+            : null}
+        </div>
       </div>
 
       <ol className="flex flex-col gap-3">
@@ -147,7 +161,7 @@ export default function PlanoFlow() {
                 <p className="text-xs text-zinc-500 flex items-center gap-2 flex-wrap">
                   <span className="flex items-center gap-1">
                     <span aria-hidden>⏱</span>
-                    ~{step.estimatedMinutes} min
+                    {humanizeMinutes(step.estimatedMinutes)}
                   </span>
                   {step.type === "course" && step.courseId !== null && (
                     <span className="opacity-70">· curso CEFIS #{step.courseId}</span>
