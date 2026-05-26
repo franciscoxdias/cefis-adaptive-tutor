@@ -4,7 +4,7 @@ import { Brand } from "../components/Brand";
 import { CefisRealBadge } from "../components/Badge";
 
 export const metadata = {
-  title: "Tenho 10 minutos · CEFIS Adaptive Tutor",
+  title: "Tenho 10 minutos · CEFIS Compass",
   description:
     "Síntese rápida de um tópico combinando trechos reais de aulas da CEFIS.",
 };

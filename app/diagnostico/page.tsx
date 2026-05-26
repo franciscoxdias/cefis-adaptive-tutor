@@ -3,7 +3,7 @@ import { Brand } from "../components/Brand";
 import { Stepper } from "../components/Stepper";
 
 export const metadata = {
-  title: "Diagnóstico · CEFIS Adaptive Tutor",
+  title: "Diagnóstico · CEFIS Compass",
   description: "Perguntas adaptadas ao seu objetivo pra mapear lacunas.",
 };
 

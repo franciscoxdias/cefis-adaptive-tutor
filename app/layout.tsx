@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CEFIS Adaptive Tutor",
+  title: "CEFIS Compass · Adaptive Learning Tutor",
   description:
-    "Aprendizado personalizado a partir do conteúdo da CEFIS. Projeto desenvolvido para o CEFIS Hackathon.",
+    "Camada adaptativa de aprendizagem com IA que ajuda o aluno a descobrir por onde começar, o que estudar e quais aulas reais da CEFIS consultar agora.",
 };
 
 export const viewport = {

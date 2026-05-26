@@ -4,7 +4,7 @@ import { Brand } from "../components/Brand";
 import { CefisRealBadge } from "../components/Badge";
 
 export const metadata = {
-  title: "Tutor · CEFIS Adaptive Tutor",
+  title: "Tutor · CEFIS Compass",
   description: "Pergunte ao tutor com IA ancorado no conteúdo real da CEFIS.",
 };
 

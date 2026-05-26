@@ -1,8 +1,14 @@
-# CEFIS Adaptive Tutor
+# CEFIS Compass
 
-> **Protótipo funcional de hackathon.** Arquitetura preparada para integração nativa na CEFIS.
+### Adaptive Learning Tutor
+
+> **Camada adaptativa de aprendizagem com IA que ajuda o aluno a descobrir por onde começar, o que estudar e quais aulas reais da CEFIS consultar agora.**
+
+**Protótipo funcional de hackathon.** Arquitetura preparada para integração nativa na CEFIS.
 
 Desenvolvido para o **CEFIS Hackathon de Inovação em Aprendizado** — 26 de maio de 2026, Orlando.
+
+*(repositório técnico segue como `cefis-adaptive-tutor` — nome do produto apresentado é **CEFIS Compass**.)*
 
 **Demo ao vivo:** https://cefis-adaptive-tutor.vercel.app/
 **Repositório:** https://github.com/franciscoxdias/cefis-adaptive-tutor

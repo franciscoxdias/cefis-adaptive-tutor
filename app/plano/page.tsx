@@ -3,7 +3,7 @@ import { Brand } from "../components/Brand";
 import { Stepper } from "../components/Stepper";
 
 export const metadata = {
-  title: "Plano de estudos · CEFIS Adaptive Tutor",
+  title: "Plano de estudos · CEFIS Compass",
   description: "Plano de estudos personalizado combinando o catálogo da CEFIS.",
 };
 
