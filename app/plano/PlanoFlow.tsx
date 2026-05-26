@@ -26,6 +26,7 @@ type Plan = {
   estimatedTotalMinutes: number;
   steps: PlanStep[];
   catalogSize?: number;
+  source?: "llm" | "stub";
 };
 
 const ONBOARDING_KEY = "cefis-tutor:onboarding";
@@ -105,6 +106,11 @@ export default function PlanoFlow() {
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-900">
+        {plan.source === "stub" && (
+          <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200 mb-2">
+            modo limitado · sem LLM ativo
+          </span>
+        )}
         <p className="text-sm text-zinc-800 dark:text-zinc-200">{plan.summary}</p>
         <p className="text-xs text-zinc-500 mt-2">
           Tempo total estimado: ~{plan.estimatedTotalMinutes} min
@@ -150,6 +156,12 @@ export default function PlanoFlow() {
       </ol>
 
       <div className="flex flex-col gap-3 mt-4">
+        <Link
+          href="/tutor"
+          className="inline-flex items-center justify-center rounded-xl bg-zinc-900 px-5 py-4 text-base font-medium text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+        >
+          Conversar com o tutor
+        </Link>
         <Link
           href="/"
           className="text-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"

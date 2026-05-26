@@ -2,56 +2,45 @@ import { NextRequest, NextResponse } from "next/server";
 import { chatJson } from "@/lib/llm-client";
 import { cefisFetch } from "@/lib/cefis-client";
 import {
-  planoPrompt,
-  type OnboardingInput,
-  type DiagnosticoAnswer,
+  tutorPrompt,
   type CatalogItem,
+  type TutorMessage,
 } from "@/lib/prompts";
-import { stubPlano } from "@/lib/stub-responses";
+import { stubTutor } from "@/lib/stub-responses";
 import type {
   CefisCoursesListResponse,
   CefisTracksListResponse,
 } from "@/lib/types";
 
-type PlanoRequest = {
-  onboarding: OnboardingInput;
-  answers: DiagnosticoAnswer[];
+type TutorRequest = {
+  question: string;
+  history?: TutorMessage[];
 };
 
-type PlanoResponse = {
-  summary: string;
-  estimatedTotalMinutes: number;
-  steps: Array<{
-    order: number;
-    title: string;
-    description: string;
-    type: "course" | "track" | "concept";
-    courseId: number | null;
-    trackId: number | null;
-    estimatedMinutes: number;
-  }>;
+type TutorLLMResponse = {
+  answer: string;
+  references: Array<{ type: "course" | "track"; id: number; title: string }>;
 };
 
-function isPlanoRequest(x: unknown): x is PlanoRequest {
+function isTutorRequest(x: unknown): x is TutorRequest {
   if (!x || typeof x !== "object") return false;
   const o = x as Record<string, unknown>;
-  return (
-    !!o.onboarding &&
-    typeof o.onboarding === "object" &&
-    Array.isArray(o.answers)
-  );
+  if (typeof o.question !== "string" || o.question.trim().length === 0) {
+    return false;
+  }
+  if (o.history !== undefined && !Array.isArray(o.history)) return false;
+  return true;
 }
 
 /**
- * POST /api/plano/generate
+ * POST /api/tutor/ask
  *
- * Body: { onboarding: OnboardingInput, answers: DiagnosticoAnswer[] }
+ * Body: { question: string, history?: TutorMessage[] }
  *
  * Fluxo:
- *  1. Busca cursos relevantes (search pelo objetivo declarado) — top 20
- *  2. Busca trilhas — top 10
- *  3. Passa catálogo real + respostas pro LLM
- *  4. LLM monta plano referenciando IDs reais
+ *  1. Busca catálogo relacionado à pergunta (search nos cursos + lista trilhas)
+ *  2. Tenta LLM com prompt grounded no catálogo
+ *  3. Se LLM falhar, retorna stub determinístico listando itens reais
  */
 export async function POST(req: NextRequest) {
   let body: unknown;
@@ -64,19 +53,26 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (!isPlanoRequest(body)) {
+  if (!isTutorRequest(body)) {
     return NextResponse.json(
       {
         error: "invalid_payload",
-        message: "Payload deve conter onboarding (objeto) e answers (array).",
+        message: "Payload deve conter question (string não vazia).",
       },
       { status: 422 }
     );
   }
 
-  // ──── 1. Buscar catálogo CEFIS relacionado ao objetivo ────
-  // Limita a 20 cursos + 10 trilhas pra não estourar context do LLM.
-  const searchTerm = body.onboarding.objective.split(/\s+/).slice(0, 5).join(" ");
+  const question = body.question.trim();
+  const history = body.history ?? [];
+
+  // 1. Buscar catálogo relevante via search da pergunta
+  const searchTerm = question
+    .split(/\s+/)
+    .filter((w) => w.length > 3)
+    .slice(0, 4)
+    .join(" ");
+
   const catalog: CatalogItem[] = [];
   let cefisError: string | null = null;
 
@@ -85,13 +81,13 @@ export async function POST(req: NextRequest) {
       cefisFetch<CefisCoursesListResponse>({
         version: "v3",
         path: "/courses",
-        query: { search: searchTerm, count: 20 },
+        query: { search: searchTerm || question, count: 8 },
         revalidate: 300,
       }).catch(() => null),
       cefisFetch<CefisTracksListResponse>({
         version: "v3",
         path: "/tracks",
-        query: { count: 10 },
+        query: { count: 5 },
         revalidate: 300,
       }).catch(() => null),
     ]);
@@ -125,35 +121,37 @@ export async function POST(req: NextRequest) {
     cefisError = err instanceof Error ? err.message : "unknown CEFIS error";
   }
 
-  // ──── 2. Tentar LLM real, cair pra stub se falhar ────
+  // 2. Tentar LLM, cair pra stub se falhar
   try {
-    const messages = planoPrompt(body.onboarding, body.answers, catalog);
-    const plan = await chatJson<PlanoResponse>(messages, {
-      temperature: 0.3,
-      maxTokens: 2000,
+    const messages = tutorPrompt(question, catalog, history);
+    const result = await chatJson<TutorLLMResponse>(messages, {
+      temperature: 0.4,
+      maxTokens: 700,
     });
 
-    if (!plan?.steps || !Array.isArray(plan.steps)) {
-      throw new Error("LLM retornou estrutura sem 'steps[]'");
+    if (typeof result?.answer !== "string") {
+      throw new Error("LLM retornou estrutura sem 'answer'");
     }
 
     return NextResponse.json({
-      ...plan,
-      catalogSize: catalog.length,
+      answer: result.answer,
+      references: Array.isArray(result.references) ? result.references : [],
       source: "llm",
       cefisError,
+      catalogSize: catalog.length,
       generatedAt: new Date().toISOString(),
     });
   } catch (err) {
     const llmError = err instanceof Error ? err.message : "unknown error";
-    const stub = stubPlano(body.onboarding, body.answers, catalog);
+    const stub = stubTutor(question, catalog);
 
     return NextResponse.json({
-      ...stub,
-      catalogSize: catalog.length,
+      answer: stub.answer,
+      references: stub.references,
       source: "stub",
       llmError,
       cefisError,
+      catalogSize: catalog.length,
       generatedAt: new Date().toISOString(),
     });
   }

@@ -141,3 +141,61 @@ Monte o plano de estudos.`;
 
   return { system, user };
 }
+
+// ──────────────── Tutor contextual ────────────────
+
+export type TutorMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
+
+export function tutorPrompt(
+  question: string,
+  catalog: CatalogItem[],
+  history: TutorMessage[] = []
+) {
+  const system = `Você é um tutor de aprendizagem da CEFIS. Sua função é responder dúvidas do aluno apoiando-se SEMPRE em conteúdo real do catálogo passado abaixo.
+
+Regras absolutas:
+- Não invente cursos, professores, datas, números ou estatísticas.
+- Se o catálogo passado tem itens relevantes, cite-os pelo título exato e indique courseId/trackId entre parênteses.
+- Se o catálogo NÃO contém nada diretamente relacionado, diga isso explicitamente e ofereça uma orientação genérica curta sem inventar.
+- Tom: profissional, direto, em pt-BR. Respostas concisas (até 200 palavras).
+- Estruture a resposta com:
+  1. resposta principal à pergunta
+  2. (quando aplicável) "Conteúdo CEFIS relacionado:" com lista numerada dos itens reais usados.
+
+Saída obrigatória: JSON no formato:
+{
+  "answer": "texto da resposta",
+  "references": [
+    { "type": "course" | "track", "id": <int>, "title": "..." }
+  ]
+}
+
+Se não houver referências reais, devolva references como array vazio [].`;
+
+  const catalogText = catalog
+    .map((c) => {
+      const dur = c.duration ? ` (~${Math.round(c.duration / 60)} min)` : "";
+      return `- [${c.type}:${c.id}] "${c.title}"${dur}${c.description ? ` — ${c.description.slice(0, 120)}` : ""}`;
+    })
+    .join("\n");
+
+  const historyText = history.length > 0
+    ? "\n═══ Conversa anterior ═══\n" +
+      history
+        .slice(-6) // últimas 6 mensagens
+        .map((m) => `${m.role === "user" ? "Aluno" : "Tutor"}: ${m.content}`)
+        .join("\n") +
+      "\n"
+    : "";
+
+  const user = `═══ Catálogo disponível (use só estes IDs) ═══
+${catalogText || "(nenhum item retornado pra esta consulta)"}
+${historyText}
+═══ Pergunta atual ═══
+${question}`;
+
+  return { system, user };
+}

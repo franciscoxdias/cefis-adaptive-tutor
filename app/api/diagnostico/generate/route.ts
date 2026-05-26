@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatJson } from "@/lib/llm-client";
 import { diagnosticoPrompt, type OnboardingInput } from "@/lib/prompts";
+import { stubDiagnostico } from "@/lib/stub-responses";
 
 type DiagnosticoResponse = {
   questions: Array<{ id: string; question: string; why: string }>;
@@ -48,6 +49,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Tenta LLM real. Se falhar (key ausente, billing, rate limit),
+  // cai para stub determinístico baseado em template.
   try {
     const messages = diagnosticoPrompt(body);
     const result = await chatJson<DiagnosticoResponse>(messages, {
@@ -61,13 +64,18 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       questions: result.questions.slice(0, 5),
+      source: "llm",
       generatedAt: new Date().toISOString(),
     });
   } catch (err) {
-    const message = err instanceof Error ? err.message : "unknown error";
-    return NextResponse.json(
-      { error: "llm_failed", message },
-      { status: 502 }
-    );
+    const llmError = err instanceof Error ? err.message : "unknown error";
+    const stub = stubDiagnostico(body);
+
+    return NextResponse.json({
+      questions: stub.questions,
+      source: "stub",
+      llmError,
+      generatedAt: new Date().toISOString(),
+    });
   }
 }
