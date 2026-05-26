@@ -64,7 +64,7 @@ Home /
 
 ## Integração CEFIS
 
-8 endpoints proxy server-side em `app/api/cefis/`, todos respeitando autenticação por API Key (não exposta ao cliente).
+6 endpoints proxy server-side em `app/api/cefis/` (com variantes de query), todos respeitando autenticação por API Key (não exposta ao cliente).
 
 | Endpoint do proxy | Endpoint CEFIS chamado |
 |---|---|
@@ -263,11 +263,11 @@ Visão de produção como **feature nativa da CEFIS**, se a parceria avançar:
 
 ---
 
-## Equipe
+## Equipe e processo
 
-- **Francisco Dias** — Estratégia, decisões e apresentação
-- **Pedro Dias** — Operação assistida por AI presencial (Manus AI)
-- **Trinity (Claude)** — CEO AI / orquestração técnica e construção
-- **Manus AI** — Conselheiro analítico paralelo
+- **Francisco Dias** conduziu produto, decisões estratégicas e apresentação
+- **Pedro Dias** apoiou testes em dispositivo real e análise crítica
 
-Construído em ~6 horas no dia do evento, com commits incrementais públicos no `main`.
+Usamos IA como copiloto técnico para acelerar desenvolvimento, revisão de código e documentação. O resultado é público e auditável: todos os commits estão no `main` deste repositório.
+
+Construído em ~6 horas no dia do evento.
