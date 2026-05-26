@@ -1,7 +1,8 @@
-import Link from "next/link";
+import PlanoFlow from "./PlanoFlow";
 
 export const metadata = {
   title: "Plano de estudos · CEFIS Adaptive Tutor",
+  description: "Plano de estudos personalizado combinando o catálogo da CEFIS.",
 };
 
 export default function PlanoPage() {
@@ -16,27 +17,12 @@ export default function PlanoPage() {
             Seu plano de estudos
           </h1>
           <p className="text-base leading-relaxed text-zinc-600 dark:text-zinc-400">
-            Em construção. Aqui o tutor combina as trilhas oficiais da CEFIS
-            com cursos do catálogo, adaptados ao seu nível e ao seu tempo
-            disponível.
+            Etapas combinando trilhas e cursos reais da CEFIS com tópicos
+            conceituais pra cobrir o que faltava no seu objetivo.
           </p>
         </header>
 
-        <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-6 dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Esta tela vai integrar a API CEFIS (trilhas + cursos) com o LLM
-            para montar uma sequência personalizada de estudos.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          <Link
-            href="/"
-            className="text-center text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
-          >
-            ← voltar ao início
-          </Link>
-        </div>
+        <PlanoFlow />
       </div>
     </main>
   );
