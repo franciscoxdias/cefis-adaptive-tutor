@@ -16,6 +16,7 @@ import type {
   OnboardingInput,
   DiagnosticoAnswer,
   CatalogItem,
+  TutorExcerpt,
 } from "./prompts";
 
 // ──────────────── Diagnóstico stub ────────────────
@@ -146,19 +147,50 @@ export function stubPlano(
 
 // ──────────────── Tutor stub ────────────────
 
+type StubTutorReference =
+  | { type: "course" | "track"; id: number; title: string }
+  | {
+      type: "lesson";
+      id: number;
+      title: string;
+      courseId: number;
+      timestamp: string;
+    };
+
 export function stubTutor(
   question: string,
-  catalog: CatalogItem[]
+  catalog: CatalogItem[],
+  excerpts: TutorExcerpt[] = []
 ): {
   answer: string;
-  references: Array<{
-    type: "course" | "track";
-    id: number;
-    title: string;
-  }>;
+  references: StubTutorReference[];
 } {
-  const top = catalog.slice(0, 3);
+  // Caso 1: temos excerpts reais de aula — resposta grounded em transcrição
+  if (excerpts.length > 0) {
+    const lines = excerpts
+      .slice(0, 3)
+      .map(
+        (e, i) =>
+          `${i + 1}. "${truncate(e.text, 180)}"\n   — aula "${e.lessonTitle}" do curso "${e.courseTitle}", aos ${e.timestamp}`
+      )
+      .join("\n\n");
 
+    const refs: StubTutorReference[] = excerpts.slice(0, 3).map((e) => ({
+      type: "lesson" as const,
+      id: e.lessonId,
+      title: e.lessonTitle,
+      courseId: e.courseId,
+      timestamp: e.timestamp,
+    }));
+
+    return {
+      answer: `Modo limitado (sem LLM ativo). Encontrei trechos reais de aulas da CEFIS que tratam da sua pergunta:\n\n${lines}\n\nEsses trechos foram extraídos das legendas oficiais. Quando o tutor com IA estiver ativo, monto uma resposta mais elaborada usando o mesmo conteúdo como base.`,
+      references: refs,
+    };
+  }
+
+  // Caso 2: sem excerpts mas com catálogo — listar cursos relacionados
+  const top = catalog.slice(0, 3);
   if (top.length === 0) {
     return {
       answer: `Estou em modo limitado (sem LLM ativo) e não encontrei conteúdo no catálogo da CEFIS diretamente relacionado a "${truncate(question, 120)}". Tente reformular a pergunta com palavras-chave mais específicas, ou volte mais tarde quando o tutor com IA estiver disponível.`,
@@ -166,12 +198,10 @@ export function stubTutor(
     };
   }
 
-  const refsList = top
-    .map((r, i) => `${i + 1}. ${r.title}`)
-    .join("\n");
+  const refsList = top.map((r, i) => `${i + 1}. ${r.title}`).join("\n");
 
   return {
-    answer: `Modo limitado: ainda sem LLM ativo pra gerar uma resposta completa. Mas encontrei ${top.length} ${top.length === 1 ? "item" : "itens"} reais no catálogo da CEFIS relacionados à sua pergunta:\n\n${refsList}\n\nVocê pode começar por esses enquanto o tutor com IA é restabelecido.`,
+    answer: `Modo limitado: ainda sem LLM ativo pra gerar uma resposta completa. Encontrei ${top.length} ${top.length === 1 ? "item" : "itens"} reais no catálogo da CEFIS relacionados à sua pergunta:\n\n${refsList}\n\nVocê pode começar por esses enquanto o tutor com IA é restabelecido.`,
     references: top.map((r) => ({
       type: r.type,
       id: r.id,

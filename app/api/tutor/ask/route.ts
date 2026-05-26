@@ -5,21 +5,38 @@ import {
   tutorPrompt,
   type CatalogItem,
   type TutorMessage,
+  type TutorExcerpt,
 } from "@/lib/prompts";
 import { stubTutor } from "@/lib/stub-responses";
+import { fetchAndParseSubtitle } from "@/lib/subtitles-fetcher";
+import { searchSegments } from "@/lib/vtt-parser";
 import type {
   CefisCoursesListResponse,
+  CefisLessonsListResponse,
   CefisTracksListResponse,
 } from "@/lib/types";
+
+// Parâmetros de profundidade do grounding (ajustáveis se custo/latência apertar)
+const TOP_COURSES_TO_DEEP_DIVE = 2;
+const TOP_LESSONS_PER_COURSE = 2;
+const TOP_EXCERPTS_TO_LLM = 5;
 
 type TutorRequest = {
   question: string;
   history?: TutorMessage[];
 };
 
+type TutorReference = {
+  type: "course" | "track" | "lesson";
+  id: number;
+  title: string;
+  courseId?: number;
+  timestamp?: string;
+};
+
 type TutorLLMResponse = {
   answer: string;
-  references: Array<{ type: "course" | "track"; id: number; title: string }>;
+  references: TutorReference[];
 };
 
 function isTutorRequest(x: unknown): x is TutorRequest {
@@ -35,12 +52,14 @@ function isTutorRequest(x: unknown): x is TutorRequest {
 /**
  * POST /api/tutor/ask
  *
- * Body: { question: string, history?: TutorMessage[] }
- *
- * Fluxo:
- *  1. Busca catálogo relacionado à pergunta (search nos cursos + lista trilhas)
- *  2. Tenta LLM com prompt grounded no catálogo
- *  3. Se LLM falhar, retorna stub determinístico listando itens reais
+ * Pipeline grounded:
+ *  1. Busca cursos via /courses?search
+ *  2. Busca trilhas (contexto adicional)
+ *  3. Pra top 2 cursos: busca aulas → pega top 2 aulas → fetch+parse VTT
+ *  4. searchSegments (busca textual nos VTTs agregados)
+ *  5. Top 5 excerpts → contexto pro LLM
+ *  6. Tenta LLM real → cai pra stub se falhar
+ *  7. Stub também usa excerpts pra retornar resposta plausível com timestamps
  */
 export async function POST(req: NextRequest) {
   let body: unknown;
@@ -66,7 +85,6 @@ export async function POST(req: NextRequest) {
   const question = body.question.trim();
   const history = body.history ?? [];
 
-  // 1. Buscar catálogo relevante via search da pergunta
   const searchTerm = question
     .split(/\s+/)
     .filter((w) => w.length > 3)
@@ -74,7 +92,13 @@ export async function POST(req: NextRequest) {
     .join(" ");
 
   const catalog: CatalogItem[] = [];
+  const excerpts: TutorExcerpt[] = [];
   let cefisError: string | null = null;
+  let vttFetches = 0;
+  let vttErrors = 0;
+
+  // ──── 1. Buscar catálogo (cursos + trilhas) ────
+  let topCourses: Array<{ id: number; title: string }> = [];
 
   try {
     const [coursesRes, tracksRes] = await Promise.all([
@@ -103,6 +127,9 @@ export async function POST(req: NextRequest) {
           categories: c.categories,
         });
       }
+      topCourses = coursesRes.data
+        .slice(0, TOP_COURSES_TO_DEEP_DIVE)
+        .map((c) => ({ id: c.id, title: c.title }));
     }
 
     if (tracksRes?.data) {
@@ -121,12 +148,82 @@ export async function POST(req: NextRequest) {
     cefisError = err instanceof Error ? err.message : "unknown CEFIS error";
   }
 
-  // 2. Tentar LLM, cair pra stub se falhar
+  // ──── 2. Pra top cursos: buscar aulas + parse VTT ────
+  if (topCourses.length > 0) {
+    const lessonsPerCourse = await Promise.all(
+      topCourses.map((c) =>
+        cefisFetch<CefisLessonsListResponse>({
+          version: "v3",
+          path: `/courses/${c.id}/lessons`,
+          revalidate: 600,
+        })
+          .then((res) => ({
+            course: c,
+            lessons: (res.data ?? []).slice(0, TOP_LESSONS_PER_COURSE),
+          }))
+          .catch(() => ({ course: c, lessons: [] }))
+      )
+    );
+
+    const vttPromises: Array<Promise<TutorExcerpt[]>> = [];
+
+    for (const { course, lessons } of lessonsPerCourse) {
+      for (const lesson of lessons) {
+        vttFetches++;
+        vttPromises.push(
+          fetchAndParseSubtitle(lesson.id)
+            .then((parsed) => {
+              const matches = searchSegments(parsed.segments, question, 3);
+              return matches.map((m) => ({
+                courseId: course.id,
+                courseTitle: course.title,
+                lessonId: lesson.id,
+                lessonTitle: lesson.title,
+                timestamp: m.timestamp,
+                text: m.text,
+              }));
+            })
+            .catch(() => {
+              vttErrors++;
+              return [] as TutorExcerpt[];
+            })
+        );
+      }
+    }
+
+    const collectedExcerpts = (await Promise.all(vttPromises)).flat();
+
+    // Ordena por relevância: agrupa por lesson e pega um por aula (variedade)
+    // depois trunca em TOP_EXCERPTS_TO_LLM
+    const byLesson = new Map<number, TutorExcerpt[]>();
+    for (const ex of collectedExcerpts) {
+      const arr = byLesson.get(ex.lessonId) ?? [];
+      arr.push(ex);
+      byLesson.set(ex.lessonId, arr);
+    }
+
+    // Round-robin: pega o melhor de cada aula, depois o segundo, etc
+    let round = 0;
+    while (excerpts.length < TOP_EXCERPTS_TO_LLM) {
+      let added = false;
+      for (const arr of byLesson.values()) {
+        if (round < arr.length) {
+          excerpts.push(arr[round]);
+          added = true;
+          if (excerpts.length >= TOP_EXCERPTS_TO_LLM) break;
+        }
+      }
+      if (!added) break;
+      round++;
+    }
+  }
+
+  // ──── 3. Tentar LLM, cair pra stub ────
   try {
-    const messages = tutorPrompt(question, catalog, history);
+    const messages = tutorPrompt(question, catalog, history, excerpts);
     const result = await chatJson<TutorLLMResponse>(messages, {
       temperature: 0.4,
-      maxTokens: 700,
+      maxTokens: 800,
     });
 
     if (typeof result?.answer !== "string") {
@@ -139,11 +236,14 @@ export async function POST(req: NextRequest) {
       source: "llm",
       cefisError,
       catalogSize: catalog.length,
+      excerptsCount: excerpts.length,
+      vttFetches,
+      vttErrors,
       generatedAt: new Date().toISOString(),
     });
   } catch (err) {
     const llmError = err instanceof Error ? err.message : "unknown error";
-    const stub = stubTutor(question, catalog);
+    const stub = stubTutor(question, catalog, excerpts);
 
     return NextResponse.json({
       answer: stub.answer,
@@ -152,6 +252,9 @@ export async function POST(req: NextRequest) {
       llmError,
       cefisError,
       catalogSize: catalog.length,
+      excerptsCount: excerpts.length,
+      vttFetches,
+      vttErrors,
       generatedAt: new Date().toISOString(),
     });
   }

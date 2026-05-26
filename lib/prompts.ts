@@ -149,31 +149,40 @@ export type TutorMessage = {
   content: string;
 };
 
+export type TutorExcerpt = {
+  courseId: number;
+  courseTitle: string;
+  lessonId: number;
+  lessonTitle: string;
+  timestamp: string; // "MM:SS"
+  text: string;
+};
+
 export function tutorPrompt(
   question: string,
   catalog: CatalogItem[],
-  history: TutorMessage[] = []
+  history: TutorMessage[] = [],
+  excerpts: TutorExcerpt[] = []
 ) {
-  const system = `Você é um tutor de aprendizagem da CEFIS. Sua função é responder dúvidas do aluno apoiando-se SEMPRE em conteúdo real do catálogo passado abaixo.
+  const system = `Você é um tutor de aprendizagem da CEFIS. Sua função é responder dúvidas do aluno apoiando-se SEMPRE em conteúdo real do catálogo e dos trechos de aula fornecidos abaixo.
 
 Regras absolutas:
-- Não invente cursos, professores, datas, números ou estatísticas.
-- Se o catálogo passado tem itens relevantes, cite-os pelo título exato e indique courseId/trackId entre parênteses.
-- Se o catálogo NÃO contém nada diretamente relacionado, diga isso explicitamente e ofereça uma orientação genérica curta sem inventar.
-- Tom: profissional, direto, em pt-BR. Respostas concisas (até 200 palavras).
-- Estruture a resposta com:
-  1. resposta principal à pergunta
-  2. (quando aplicável) "Conteúdo CEFIS relacionado:" com lista numerada dos itens reais usados.
+- Não invente cursos, professores, datas, números, estatísticas ou citações.
+- Quando houver trechos de aula relevantes, use-os como evidência principal da resposta, mencionando o título da aula e o timestamp.
+- Cite cursos/trilhas do catálogo pelo título exato e indique courseId/trackId.
+- Se nem catálogo nem trechos contêm conteúdo relevante, diga isso explicitamente e ofereça orientação genérica curta sem inventar.
+- Tom: profissional, direto, em pt-BR. Resposta concisa (até 200 palavras).
 
 Saída obrigatória: JSON no formato:
 {
   "answer": "texto da resposta",
   "references": [
-    { "type": "course" | "track", "id": <int>, "title": "..." }
+    { "type": "course" | "track" | "lesson", "id": <int>, "title": "...", "timestamp": "MM:SS"?, "courseId": <int>? }
   ]
 }
 
-Se não houver referências reais, devolva references como array vazio [].`;
+- Use type "lesson" e inclua courseId+timestamp quando referenciar trecho de aula.
+- Se não houver referências reais, devolva references como array vazio [].`;
 
   const catalogText = catalog
     .map((c) => {
@@ -181,6 +190,13 @@ Se não houver referências reais, devolva references como array vazio [].`;
       return `- [${c.type}:${c.id}] "${c.title}"${dur}${c.description ? ` — ${c.description.slice(0, 120)}` : ""}`;
     })
     .join("\n");
+
+  const excerptsText = excerpts
+    .map(
+      (e, i) =>
+        `[${i + 1}] Curso "${e.courseTitle}" (course:${e.courseId}) · Aula "${e.lessonTitle}" (lesson:${e.lessonId}) · ${e.timestamp}\n"${e.text}"`
+    )
+    .join("\n\n");
 
   const historyText = history.length > 0
     ? "\n═══ Conversa anterior ═══\n" +
@@ -191,8 +207,11 @@ Se não houver referências reais, devolva references como array vazio [].`;
       "\n"
     : "";
 
-  const user = `═══ Catálogo disponível (use só estes IDs) ═══
+  const user = `═══ Catálogo CEFIS disponível ═══
 ${catalogText || "(nenhum item retornado pra esta consulta)"}
+
+═══ Trechos de aula reais (use como evidência principal) ═══
+${excerptsText || "(nenhum trecho de aula disponível pra esta consulta)"}
 ${historyText}
 ═══ Pergunta atual ═══
 ${question}`;

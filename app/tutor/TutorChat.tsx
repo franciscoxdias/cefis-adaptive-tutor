@@ -2,7 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 
-type Reference = { type: "course" | "track"; id: number; title: string };
+type Reference =
+  | { type: "course" | "track"; id: number; title: string }
+  | {
+      type: "lesson";
+      id: number;
+      title: string;
+      courseId?: number;
+      timestamp?: string;
+    };
 
 type Message = {
   role: "user" | "assistant";
@@ -190,16 +198,34 @@ function MessageBubble({ message }: { message: Message }) {
             <p className="text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1.5">
               Conteúdo CEFIS citado:
             </p>
-            <ul className="flex flex-col gap-1">
+            <ul className="flex flex-col gap-1.5">
               {message.references.map((ref, i) => (
                 <li
                   key={`${ref.type}-${ref.id}-${i}`}
                   className="text-xs text-zinc-700 dark:text-zinc-300"
                 >
-                  <span className="opacity-60 mr-1">
-                    [{ref.type === "course" ? "curso" : "trilha"} #{ref.id}]
-                  </span>
-                  {ref.title}
+                  {ref.type === "lesson" ? (
+                    <>
+                      <span className="opacity-60 mr-1">
+                        [aula #{ref.id}
+                        {"courseId" in ref && ref.courseId
+                          ? ` · curso #${ref.courseId}`
+                          : ""}
+                        {"timestamp" in ref && ref.timestamp
+                          ? ` · ${ref.timestamp}`
+                          : ""}
+                        ]
+                      </span>
+                      {ref.title}
+                    </>
+                  ) : (
+                    <>
+                      <span className="opacity-60 mr-1">
+                        [{ref.type === "course" ? "curso" : "trilha"} #{ref.id}]
+                      </span>
+                      {ref.title}
+                    </>
+                  )}
                 </li>
               ))}
             </ul>
