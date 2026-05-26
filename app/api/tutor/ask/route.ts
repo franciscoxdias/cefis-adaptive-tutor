@@ -85,52 +85,73 @@ export async function POST(req: NextRequest) {
   const question = body.question.trim();
   const history = body.history ?? [];
 
-  const searchTerm = question
+  // Search strategy: tenta combos de keywords do mais específico ao mais simples
+  // até obter pelo menos 1 curso. CEFIS faz match literal em title/subtitle/keywords.
+  const keywords = question
+    .toLowerCase()
+    .replace(/[^\p{Letter}\p{Number}\s]/gu, " ")
     .split(/\s+/)
     .filter((w) => w.length > 3)
-    .slice(0, 4)
-    .join(" ");
+    .filter((w) => !["como","quando","onde","qual","quais","quem","sobre","entre","mais","muito","pode","esse","essa","isso","este","esta","aquele","aquela"].includes(w));
+
+  const searchAttempts: string[] = [];
+  if (keywords.length >= 2) searchAttempts.push(keywords.slice(0, 2).join(" "));
+  if (keywords.length >= 1) searchAttempts.push(keywords[0]);
+  searchAttempts.push(question);
+  // dedupe
+  const uniqueAttempts = Array.from(new Set(searchAttempts));
 
   const catalog: CatalogItem[] = [];
   const excerpts: TutorExcerpt[] = [];
   let cefisError: string | null = null;
   let vttFetches = 0;
   let vttErrors = 0;
+  let usedSearchTerm: string | null = null;
 
-  // ──── 1. Buscar catálogo (cursos + trilhas) ────
+  // ──── 1. Buscar catálogo (cursos com fallback progressivo + trilhas) ────
   let topCourses: Array<{ id: number; title: string }> = [];
+  let coursesData: CefisCoursesListResponse["data"] = [];
 
   try {
-    const [coursesRes, tracksRes] = await Promise.all([
-      cefisFetch<CefisCoursesListResponse>({
+    // Trilhas em paralelo (sempre busca igual)
+    const tracksPromise = cefisFetch<CefisTracksListResponse>({
+      version: "v3",
+      path: "/tracks",
+      query: { count: 5 },
+      revalidate: 300,
+    }).catch(() => null);
+
+    // Cursos com fallback: tenta cada attempt até achar resultado
+    for (const term of uniqueAttempts) {
+      const res = await cefisFetch<CefisCoursesListResponse>({
         version: "v3",
         path: "/courses",
-        query: { search: searchTerm || question, count: 8 },
+        query: { search: term, count: 8 },
         revalidate: 300,
-      }).catch(() => null),
-      cefisFetch<CefisTracksListResponse>({
-        version: "v3",
-        path: "/tracks",
-        query: { count: 5 },
-        revalidate: 300,
-      }).catch(() => null),
-    ]);
+      }).catch(() => null);
 
-    if (coursesRes?.data) {
-      for (const c of coursesRes.data) {
-        catalog.push({
-          type: "course",
-          id: c.id,
-          title: c.title,
-          description: c.subtitle ?? c.summary ?? null,
-          duration: c.duration,
-          categories: c.categories,
-        });
+      if (res?.data && res.data.length > 0) {
+        coursesData = res.data;
+        usedSearchTerm = term;
+        break;
       }
-      topCourses = coursesRes.data
-        .slice(0, TOP_COURSES_TO_DEEP_DIVE)
-        .map((c) => ({ id: c.id, title: c.title }));
     }
+
+    const tracksRes = await tracksPromise;
+
+    for (const c of coursesData) {
+      catalog.push({
+        type: "course",
+        id: c.id,
+        title: c.title,
+        description: c.subtitle ?? c.summary ?? null,
+        duration: c.duration,
+        categories: c.categories,
+      });
+    }
+    topCourses = coursesData
+      .slice(0, TOP_COURSES_TO_DEEP_DIVE)
+      .map((c) => ({ id: c.id, title: c.title }));
 
     if (tracksRes?.data) {
       for (const t of tracksRes.data) {
@@ -239,6 +260,7 @@ export async function POST(req: NextRequest) {
       excerptsCount: excerpts.length,
       vttFetches,
       vttErrors,
+      usedSearchTerm,
       generatedAt: new Date().toISOString(),
     });
   } catch (err) {
@@ -255,6 +277,7 @@ export async function POST(req: NextRequest) {
       excerptsCount: excerpts.length,
       vttFetches,
       vttErrors,
+      usedSearchTerm,
       generatedAt: new Date().toISOString(),
     });
   }
