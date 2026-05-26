@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CEFIS Adaptive Tutor
 
-## Getting Started
+Tutor de aprendizagem com IA construído para o **CEFIS Hackathon de Inovação em Aprendizado** (26 de maio de 2026).
 
-First, run the development server:
+Combina o conteúdo real da CEFIS (catálogo, trilhas e transcrições) com IA para entregar onboarding, diagnóstico de lacunas, plano de estudos personalizado e tutoria contextual ao aluno.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## Stack
+
+- **Framework:** Next.js (App Router) + React + TypeScript
+- **Estilização:** Tailwind CSS
+- **Hospedagem:** Vercel
+- **Integração:** API REST CEFIS (`cefis.com.br` v1 e `api-v3.cefis.com.br` v3) via API routes server-side
+
+## Estrutura
+
+```
+app/
+  ├── layout.tsx              # Layout raiz (PT-BR, mobile-first)
+  ├── page.tsx                # Página inicial
+  ├── globals.css             # Estilos globais (Tailwind 4)
+  └── api/
+      └── cefis/
+          └── health/         # Endpoint de saúde
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Como rodar localmente
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+git clone <repo-url>
+cd cefis-adaptive-tutor
+npm install
+cp .env.example .env.local   # preencher com chaves reais
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Abra [http://localhost:3000](http://localhost:3000).
 
-## Learn More
+## Variáveis de ambiente
 
-To learn more about Next.js, take a look at the following resources:
+Ver `.env.example` para a lista completa. A API Key da CEFIS é obtida criando uma conta gratuita em [cefis.com.br](https://cefis.com.br) e usando `POST /api/v1/login`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Nunca commitar chaves reais.**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Segurança e conteúdo proprietário
 
-## Deploy on Vercel
+- API Keys ficam em `.env.local` (gitignored) ou nas env vars do Vercel.
+- O arquivo de transcrições disponibilizado pela organização é tratado como conteúdo proprietário: processado server-side e não committado ao repositório.
+- Embeddings e índices derivados também ficam fora do repositório.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Status atual
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Em construção durante o evento. Versão pública será publicada até as 23:59 (horário de Orlando) de 26/05/2026.
+
+## Equipe
+
+- **Francisco Dias** — Decisor e apresentador
+- **Pedro Dias** — Operação assistida por AI presencial
+- **Trinity (Claude)** — CEO AI / orquestração técnica
+- **Manus AI** — Conselheiro analítico paralelo
