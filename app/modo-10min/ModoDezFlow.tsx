@@ -200,7 +200,7 @@ function ModoDezResult({ result }: { result: ModoDezResponse }) {
             {result.keyPoints.map((point, i) => (
               <li
                 key={i}
-                className="flex gap-3 rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-950"
+                className="glow-card flex gap-3 rounded-lg p-4"
               >
                 <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-900 text-xs font-semibold text-white shrink-0 dark:bg-white dark:text-zinc-900">
                   {i + 1}
