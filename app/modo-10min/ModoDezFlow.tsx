@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CefisRealBadge, CoverageBadge } from "../components/Badge";
+import {
+  CefisRealBadge,
+  GroundedBadge,
+  AIComplementaryBadge,
+  CefisRelatedBadge,
+} from "../components/Badge";
 
 type Excerpt = {
   courseId: number;
@@ -180,25 +185,39 @@ export default function ModoDezFlow() {
 }
 
 function ModoDezResult({ result }: { result: ModoDezResponse }) {
-  const isComplementary = result.coverage === "ai-complementary";
+  // Regra unificada: SEM excerpts reais = sempre tratar como complementar.
+  // Coverage "cefis-related" (catalog tem cursos mas zero trechos VTT)
+  // NÃO ancora a resposta — vira bloco secundário de sugestão.
+  const hasExcerpts = result.excerpts.length > 0;
+  const isComplementary = !hasExcerpts;
+
+  // Renderiza a estrutura de aula complementar quando NÃO há excerpts e
+  // o LLM gerou pelo menos um dos campos extras (objective/explanation/etc).
   const hasComplementaryExtras =
     isComplementary &&
-    (result.objective ||
-      result.explanation ||
-      result.practicalExample ||
-      (result.exercise && result.exercise.length > 0) ||
-      (result.recommendedSources && result.recommendedSources.length > 0));
+    Boolean(
+      result.objective ||
+        result.explanation ||
+        result.practicalExample ||
+        (result.exercise && result.exercise.length > 0) ||
+        (result.recommendedSources && result.recommendedSources.length > 0)
+    );
 
   return (
     <article className="flex flex-col gap-5">
       <header className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <CoverageBadge coverage={result.coverage} />
-          {result.excerpts.length > 0 ? (
-            <CefisRealBadge
-              label={`${result.excerpts.length} trechos de ${countDistinctLessons(result.excerpts)} aulas reais`}
-            />
-          ) : null}
+          {/* Badge principal: ancorada se há trechos · complementar IA se não */}
+          {hasExcerpts ? (
+            <>
+              <GroundedBadge />
+              <CefisRealBadge
+                label={`${result.excerpts.length} trechos de ${countDistinctLessons(result.excerpts)} aulas reais`}
+              />
+            </>
+          ) : (
+            <AIComplementaryBadge />
+          )}
           <span className="text-xs text-muted-foreground flex items-center gap-1">
             <span aria-hidden>⏱</span>
             ~{result.estimatedReadingMinutes} min de leitura
@@ -309,15 +328,33 @@ function ModoDezResult({ result }: { result: ModoDezResponse }) {
           )}
 
           {result.advisory && (
-            <div className="border-t border-border pt-4">
-              <div className="flex gap-2 text-xs text-muted-foreground items-start">
+            <Section number={7} title="Aviso / limitação honesta">
+              <div className="flex gap-2 text-xs text-muted-foreground items-start rounded-lg bg-card/40 p-3 border border-border">
                 <span aria-hidden className="text-accent shrink-0 mt-0.5">
                   ⚠
                 </span>
                 <p className="leading-relaxed">{result.advisory}</p>
               </div>
-            </div>
+            </Section>
           )}
+        </div>
+      )}
+
+      {/* Bloco secundário: "Conteúdos CEFIS relacionados" quando coverage=cefis-related
+          mas sem grounding direto. NUNCA aparece como ancoragem principal. */}
+      {isComplementary && result.coverage === "cefis-related" && (
+        <div className="rounded-xl border border-border bg-card/40 p-5 flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <CefisRelatedBadge />
+            <span className="text-xs text-muted-foreground">
+              (sugestão · sem cobertura direta)
+            </span>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            O catálogo CEFIS retornou cursos próximos ao tema buscado, mas
+            sem trechos diretamente relacionados nas legendas. Explore-os no
+            painel da CEFIS se quiser conteúdo oficial adjacente.
+          </p>
         </div>
       )}
 
