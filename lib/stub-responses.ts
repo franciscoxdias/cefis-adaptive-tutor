@@ -62,12 +62,24 @@ export function stubDiagnostico(input: OnboardingInput): {
 
 // ──────────────── Plano stub ────────────────
 
+export type PlanoMaterial = {
+  type: "resumo" | "podcast" | "checklist" | "quiz";
+  title: string;
+  description: string;
+};
+
+export type PlanoRoutineItem = {
+  day: string;
+  action: string;
+};
+
 export function stubPlano(
   input: OnboardingInput,
   answers: DiagnosticoAnswer[],
   catalog: CatalogItem[]
 ): {
   summary: string;
+  profileSummary?: string;
   estimatedTotalMinutes: number;
   steps: Array<{
     order: number;
@@ -78,6 +90,8 @@ export function stubPlano(
     trackId: number | null;
     estimatedMinutes: number;
   }>;
+  materials: PlanoMaterial[];
+  routine: PlanoRoutineItem[];
 } {
   const timeMap: Record<OnboardingInput["timePerDay"], number> = {
     "10min": 10,
@@ -138,11 +152,112 @@ export function stubPlano(
     ? `Combina ${picks.length} ${picks.length === 1 ? "item" : "itens"} reais do catálogo CEFIS com etapas conceituais de preparação e prática.`
     : `Plano em modo simplificado: o catálogo CEFIS não retornou itens diretamente relacionados ao termo de busca. Você pode refinar o objetivo e regerar.`;
 
+  // Profile summary refletindo o perfil do aluno
+  const expLabel: Record<string, string> = {
+    comecando: "começando agora",
+    "1-3": "1-3 anos",
+    "4-7": "4-7 anos",
+    "8+": "8+ anos",
+    lideranca: "liderança",
+  };
+  const styleLabel: Record<string, string> = {
+    visual: "visual (vídeos, mapas)",
+    auditivo: "auditivo (áudio/podcast)",
+    leitura: "leitura (resumos)",
+    pratico: "prático (checklists, exercícios)",
+    misto: "misto",
+  };
+  const profileBits: string[] = [
+    `objetivo "${truncate(input.objective, 60)}"`,
+    `nível ${input.level}`,
+  ];
+  if (input.area) profileBits.push(`área ${input.area}`);
+  if (input.experience)
+    profileBits.push(`experiência ${expLabel[input.experience] ?? input.experience}`);
+  if (input.learningStyle)
+    profileBits.push(`preferência ${styleLabel[input.learningStyle] ?? input.learningStyle}`);
+  const profileSummary = `Você informou ${profileBits.join(", ")}. Por isso, o plano combina conteúdo CEFIS, materiais complementares e exercícios no formato mais adequado ao seu perfil.`;
+
+  // Materiais sempre presentes (textuais, sem PDF/áudio)
+  const materials = buildMaterials(input.learningStyle ?? "misto", input.objective);
+
+  // Rotina sugerida (4 dias, adaptada ao timePerDay)
+  const routine = buildRoutine(dailyMinutes);
+
   return {
-    summary: `Plano gerado em modo limitado (sem LLM ativo). ${sumPicks} Distribuído pra ${input.timePerDay.replace("min", " minutos")} por dia${answers.length > 0 ? `, considerando suas ${answers.length} respostas do diagnóstico` : ""}.`,
+    summary: `Plano combinando ${picks.length > 0 ? `${picks.length} ${picks.length === 1 ? "item" : "itens"} reais do catálogo CEFIS` : "etapas conceituais"} com materiais complementares, distribuído para ${input.timePerDay.replace("min", " minutos")} por dia.`,
+    profileSummary,
     estimatedTotalMinutes: totalMinutes,
     steps,
+    materials,
+    routine,
   };
+}
+
+function buildMaterials(
+  style: string,
+  objective: string
+): PlanoMaterial[] {
+  const topic = truncate(objective, 60);
+  const allMaterials: PlanoMaterial[] = [
+    {
+      type: "resumo",
+      title: "Resumo / apostila personalizada",
+      description: `Guia estruturado em texto sobre "${topic}" para revisar o tema com clareza, organizado em conceitos-chave e exemplos.`,
+    },
+    {
+      type: "podcast",
+      title: "Roteiro estilo podcast",
+      description: `Versão narrável do conteúdo, em texto, pensada para quem aprende melhor ouvindo (ou quer ler em voz alta para fixar).`,
+    },
+    {
+      type: "checklist",
+      title: "Checklist prático",
+      description: `Passos de aplicação para transformar o conteúdo em ação concreta no seu dia a dia.`,
+    },
+    {
+      type: "quiz",
+      title: "Quiz de fixação",
+      description: `3 a 5 perguntas rápidas para verificar entendimento e identificar lacunas restantes.`,
+    },
+  ];
+
+  // Reordena conforme estilo de aprendizagem
+  if (style === "visual") {
+    return [allMaterials[0], allMaterials[2], allMaterials[3], allMaterials[1]];
+  }
+  if (style === "auditivo") {
+    return [allMaterials[1], allMaterials[0], allMaterials[3], allMaterials[2]];
+  }
+  if (style === "leitura") {
+    return [allMaterials[0], allMaterials[3], allMaterials[2], allMaterials[1]];
+  }
+  if (style === "pratico") {
+    return [allMaterials[2], allMaterials[3], allMaterials[0], allMaterials[1]];
+  }
+  return allMaterials; // misto
+}
+
+function buildRoutine(dailyMin: number): PlanoRoutineItem[] {
+  const time = dailyMin >= 60 ? "1h" : `${dailyMin} min`;
+  return [
+    {
+      day: "Dia 1",
+      action: `Estudar o resumo / apostila personalizada (${time}).`,
+    },
+    {
+      day: "Dia 2",
+      action: `Assistir aos trechos CEFIS recomendados no plano (${time}).`,
+    },
+    {
+      day: "Dia 3",
+      action: `Responder ao quiz de fixação e marcar as lacunas restantes (${time}).`,
+    },
+    {
+      day: "Dia 4",
+      action: `Aplicar o checklist em um caso prático e tirar dúvidas com o tutor (${time}).`,
+    },
+  ];
 }
 
 // ──────────────── Tutor stub ────────────────

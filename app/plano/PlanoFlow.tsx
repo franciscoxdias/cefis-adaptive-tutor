@@ -23,10 +23,24 @@ type PlanStep = {
   estimatedMinutes: number;
 };
 
+type Material = {
+  type: "resumo" | "podcast" | "checklist" | "quiz" | string;
+  title: string;
+  description: string;
+};
+
+type RoutineItem = {
+  day: string;
+  action: string;
+};
+
 type Plan = {
   summary: string;
+  profileSummary?: string;
   estimatedTotalMinutes: number;
   steps: PlanStep[];
+  materials?: Material[];
+  routine?: RoutineItem[];
   catalogSize?: number;
   source?: "llm" | "stub";
 };
@@ -138,6 +152,22 @@ export default function PlanoFlow() {
         </div>
       </div>
 
+      {/* Plano adaptado ao perfil */}
+      {plan.profileSummary && (
+        <div className="glow-card rounded-xl p-5 border-l-2 border-l-brand">
+          <div className="flex items-center gap-2 text-brand font-semibold text-xs uppercase tracking-wider mb-2">
+            <span aria-hidden>◆</span>
+            Plano adaptado ao seu perfil
+          </div>
+          <p className="text-sm text-foreground/90 leading-relaxed">
+            {plan.profileSummary}
+          </p>
+        </div>
+      )}
+
+      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mt-2">
+        Etapas do plano
+      </h3>
       <ol className="flex flex-col gap-3">
         {plan.steps.map((step) => (
           <li
@@ -175,6 +205,69 @@ export default function PlanoFlow() {
           </li>
         ))}
       </ol>
+
+      {/* Materiais personalizados gerados por IA */}
+      {plan.materials && plan.materials.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-accent flex items-center gap-2">
+            <span aria-hidden>✦</span>
+            Materiais personalizados gerados por IA
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Materiais textuais adaptados ao seu estilo de aprendizagem. Disponíveis no MVP em formato texto.
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {plan.materials.map((m, i) => (
+              <div
+                key={i}
+                className="glow-card rounded-lg p-4 flex flex-col gap-2"
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    aria-hidden
+                    className="h-7 w-7 rounded-md bg-accent/10 border border-accent/30 flex items-center justify-center text-accent text-sm"
+                  >
+                    {materialIcon(m.type)}
+                  </span>
+                  <h4 className="font-bold text-sm">{m.title}</h4>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {m.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Rotina sugerida */}
+      {plan.routine && plan.routine.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-brand flex items-center gap-2">
+            <span aria-hidden>↗</span>
+            Ritmo de evolução recomendado
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Sugestão de rotina nos primeiros dias. O MVP não faz tracking real
+            de progresso — em produção, isso se conecta ao histórico do aluno.
+          </p>
+          <ol className="flex flex-col gap-2">
+            {plan.routine.map((r, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-3 rounded-lg border border-border bg-card/50 px-4 py-3"
+              >
+                <span className="shrink-0 text-xs font-bold text-brand uppercase tracking-wider min-w-[3rem]">
+                  {r.day}
+                </span>
+                <p className="text-sm text-foreground/90 leading-relaxed">
+                  {r.action}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       <div className="flex flex-col gap-3 mt-4">
         <Link
@@ -224,6 +317,14 @@ export default function PlanoFlow() {
       )}
     </div>
   );
+}
+
+function materialIcon(type: string): string {
+  if (type === "resumo") return "≡";
+  if (type === "podcast") return "♪";
+  if (type === "checklist") return "☑";
+  if (type === "quiz") return "?";
+  return "◆";
 }
 
 function TypeBadge({ type }: { type: PlanStep["type"] }) {

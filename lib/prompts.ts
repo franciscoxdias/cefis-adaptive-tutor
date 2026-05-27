@@ -8,11 +8,29 @@
  * - Idioma: pt-BR
  */
 
+export type LearningStyle =
+  | "visual"
+  | "auditivo"
+  | "leitura"
+  | "pratico"
+  | "misto";
+
+export type Experience =
+  | "comecando"
+  | "1-3"
+  | "4-7"
+  | "8+"
+  | "lideranca";
+
 export type OnboardingInput = {
   name: string;
   objective: string;
   level: "iniciante" | "intermediario" | "avancado";
   timePerDay: "10min" | "30min" | "60min" | "120min";
+  // Campos novos (opcionais pra retrocompat com perfis salvos antes da v9)
+  area?: string; // ex: "Analista", "Gestor", "Contador", "Outro"
+  experience?: Experience;
+  learningStyle?: LearningStyle;
 };
 
 const LEVEL_LABEL: Record<OnboardingInput["level"], string> = {
@@ -25,8 +43,39 @@ const TIME_LABEL: Record<OnboardingInput["timePerDay"], string> = {
   "10min": "10 minutos por dia",
   "30min": "30 minutos por dia",
   "60min": "1 hora por dia",
-  "120min": "2 horas ou mais por dia",
+  "120min": "plano intensivo (2h+/dia)",
 };
+
+const EXPERIENCE_LABEL: Record<Experience, string> = {
+  comecando: "começando agora",
+  "1-3": "1 a 3 anos de experiência",
+  "4-7": "4 a 7 anos de experiência",
+  "8+": "8+ anos de experiência",
+  lideranca: "experiência avançada / liderança",
+};
+
+const STYLE_LABEL: Record<LearningStyle, string> = {
+  visual: "visual (vídeos, mapas, cards)",
+  auditivo: "auditivo (áudio, podcast, narração)",
+  leitura: "leitura (resumos, apostilas, guias escritos)",
+  pratico: "prático/cinestésico (checklists, exercícios, tarefas)",
+  misto: "misto (combinação dos formatos)",
+};
+
+function profileLines(input: OnboardingInput): string {
+  const lines: string[] = [
+    `Aluno: ${input.name}`,
+    `Objetivo: "${input.objective}"`,
+    `Nível: ${LEVEL_LABEL[input.level]}`,
+    `Tempo disponível: ${TIME_LABEL[input.timePerDay]}`,
+  ];
+  if (input.area) lines.push(`Área/cargo: ${input.area}`);
+  if (input.experience)
+    lines.push(`Experiência profissional: ${EXPERIENCE_LABEL[input.experience]}`);
+  if (input.learningStyle)
+    lines.push(`Estilo de aprendizagem preferido: ${STYLE_LABEL[input.learningStyle]}`);
+  return lines.join("\n");
+}
 
 // ──────────────── Diagnóstico ────────────────
 
@@ -48,12 +97,10 @@ Saída obrigatória: JSON no formato:
   ]
 }`;
 
-  const user = `Aluno: ${input.name}
-Objetivo declarado: "${input.objective}"
-Nível atual: ${LEVEL_LABEL[input.level]}
-Tempo disponível: ${TIME_LABEL[input.timePerDay]}
+  const user = `═══ Perfil do aluno ═══
+${profileLines(input)}
 
-Gere as 3 a 5 perguntas de diagnóstico.`;
+Considere TODOS os campos acima — especialmente experiência profissional, área/cargo e estilo de aprendizagem — pra calibrar a profundidade e a forma das perguntas. Gere as 3 a 5 perguntas de diagnóstico.`;
 
   return { system, user };
 }
@@ -80,19 +127,27 @@ export function planoPrompt(
   answers: DiagnosticoAnswer[],
   catalog: CatalogItem[]
 ) {
-  const system = `Você é um tutor de aprendizagem especialista da CEFIS. Sua missão é montar um plano de estudos personalizado combinando trilhas e cursos REAIS do catálogo fornecido com etapas conceituais quando necessário.
+  const system = `Você é um tutor de aprendizagem especialista da CEFIS. Sua missão é montar um plano de estudos personalizado combinando trilhas e cursos REAIS do catálogo fornecido com etapas conceituais quando necessário, adaptando ao perfil do aluno.
 
 Regras absolutas:
 - USE APENAS itens (cursos/trilhas) que aparecem no catálogo fornecido. Refira-se a eles pelo "id" e "title" exatos.
 - NÃO invente cursos, trilhas, professores, durações, números ou estatísticas.
-- O plano deve ser realista para o tempo diário declarado.
+- O plano deve ser realista para o tempo diário e o nível de experiência declarados.
 - Entre 3 e 7 etapas. Cada etapa tem: ordem, título da etapa, descrição curta, tipo (course/track/concept), e quando aplicável courseId ou trackId do catálogo.
-- Se nenhum item do catálogo se encaixa numa etapa, use type "concept" e descreva o que estudar — sem citar curso específico.
+- Se nenhum item do catálogo se encaixa numa etapa, use type "concept" e descreva o que estudar.
 - Idioma: pt-BR. Tom: profissional, direto.
+
+Adapte o plano ao estilo de aprendizagem declarado (se houver):
+- visual: priorize aulas em vídeo, mencione cards e mapas mentais
+- auditivo: indique roteiro estilo podcast pra revisão
+- leitura: priorize resumos, apostilas e materiais escritos
+- prático: inclua checklists e exercícios aplicados
+- misto: combine formatos
 
 Saída obrigatória: JSON no formato:
 {
-  "summary": "1-2 frases descrevendo o plano",
+  "summary": "1-2 frases descrevendo o plano, refletindo perfil/experiência/estilo",
+  "profileSummary": "1 frase começando com 'Você informou ...' que reflete os dados do onboarding e justifica adaptações",
   "estimatedTotalMinutes": <int>,
   "steps": [
     {
@@ -104,8 +159,23 @@ Saída obrigatória: JSON no formato:
       "trackId": <int|null>,
       "estimatedMinutes": <int>
     }
+  ],
+  "materials": [
+    { "type": "resumo" | "podcast" | "checklist" | "quiz", "title": "...", "description": "..." }
+  ],
+  "routine": [
+    { "day": "Dia 1", "action": "..." }
   ]
-}`;
+}
+
+Regras pra materials:
+- Gere 3-4 materiais textuais (resumo/apostila textual, roteiro estilo podcast, checklist prático, quiz de 3-5 perguntas).
+- Adapte a ordem ao estilo de aprendizagem (visual: cards/mapa no resumo; auditivo: podcast em destaque; leitura: resumo profundo; prático: checklist + quiz em destaque).
+- Nunca prometa PDF, áudio gerado, ou download. Tudo é textual no MVP.
+
+Regras pra routine:
+- 4 a 5 dias sugeridos com ações curtas, realistas pro tempo diário declarado.
+- Não invente sistema de tracking. Esta é uma SUGESTÃO de rotina, não progresso real.`;
 
   const catalogText = catalog
     .map((c) => {
@@ -126,18 +196,16 @@ Saída obrigatória: JSON no formato:
     )
     .join("\n\n");
 
-  const user = `Aluno: ${input.name}
-Objetivo: "${input.objective}"
-Nível: ${LEVEL_LABEL[input.level]}
-Tempo disponível: ${TIME_LABEL[input.timePerDay]}
+  const user = `═══ Perfil completo do aluno ═══
+${profileLines(input)}
 
 ═══ Respostas do diagnóstico ═══
-${answersText || "(sem respostas registradas — gere plano genérico baseado em objetivo+nível)"}
+${answersText || "(sem respostas registradas — gere plano baseado no perfil)"}
 
-═══ Catálogo disponível (use só estes IDs) ═══
+═══ Catálogo CEFIS disponível (use só estes IDs) ═══
 ${catalogText || "(catálogo vazio — gere plano só com etapas tipo concept)"}
 
-Monte o plano de estudos.`;
+Monte o plano de estudos completo, incluindo materials e routine.`;
 
   return { system, user };
 }
