@@ -1,5 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Brand } from "./components/Brand";
+import { CompassArt } from "./components/CompassArt";
 
 export default function Home() {
   return (
@@ -15,24 +17,55 @@ export default function Home() {
             <a href="#diferenciais" className="hover:text-brand transition">Diferenciais</a>
             <a href="#faq" className="hover:text-brand transition">FAQ</a>
           </div>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground hidden lg:inline">
-            CEFIS Hackathon · 26/05/2026
-          </span>
+          <div className="hidden lg:flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+            <span>Powered by</span>
+            <Image
+              src="/logo-cefis.png"
+              alt="CEFIS"
+              width={20}
+              height={20}
+              className="opacity-70"
+            />
+            <span className="font-bold text-foreground">CEFIS</span>
+          </div>
         </div>
       </header>
 
       <main className="flex-1">
         {/* ════════════ HERO ════════════ */}
         <section className="relative overflow-hidden">
-          <div className="container max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-12 sm:py-20 lg:py-28 fade-in">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-              {/* Left: proposta */}
-              <div className="lg:col-span-7 flex flex-col items-start">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-soft border border-brand/30 text-brand font-semibold text-xs mb-6 uppercase tracking-wider">
-                  <span aria-hidden>●</span>
-                  Camada adaptativa de aprendizagem
+          <div className="container max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-12 sm:py-20 lg:py-24 fade-in">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+              {/* ───── Bloco esquerdo: branding + headline + CTAs ───── */}
+              <div className="lg:col-span-7 flex flex-col items-start order-1 lg:order-1">
+                {/* (a) Micro-label institucional */}
+                <div className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-card border border-border text-[11px] mb-7">
+                  <Image
+                    src="/logo-cefis.png"
+                    alt="CEFIS"
+                    width={16}
+                    height={16}
+                    className="opacity-80"
+                  />
+                  <span className="font-semibold text-muted-foreground uppercase tracking-wider">
+                    Powered by conteúdo real da CEFIS
+                  </span>
                 </div>
 
+                {/* (b) Marca produto CEFIS Compass */}
+                <div className="flex flex-col gap-1 mb-6">
+                  <h2 className="font-bold text-2xl sm:text-3xl tracking-tight leading-none">
+                    CEFIS{" "}
+                    <span className="text-brand bg-gradient-to-r from-brand to-accent bg-clip-text text-transparent">
+                      Compass
+                    </span>
+                  </h2>
+                  <p className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-[0.2em]">
+                    Adaptive Learning Tutor
+                  </p>
+                </div>
+
+                {/* (c) Headline */}
                 <h1 className="font-bold tracking-tight text-4xl sm:text-5xl lg:text-6xl leading-[1.05] mb-6">
                   Não consuma conteúdo.
                   <br />
@@ -41,13 +74,14 @@ export default function Home() {
                   </span>
                 </h1>
 
+                {/* (d) Subheadline */}
                 <p className="text-muted-foreground text-base sm:text-lg lg:text-xl mb-8 max-w-2xl leading-relaxed">
-                  O <strong className="text-foreground">CEFIS Compass</strong>{" "}
-                  é uma camada adaptativa de aprendizagem com IA que guia o
-                  aluno pelo acervo real da CEFIS, identifica lacunas e
-                  estrutura uma rota personalizada de estudos.
+                  Uma camada adaptativa de aprendizagem com IA que guia o aluno
+                  pelo acervo real da CEFIS, identifica lacunas e estrutura uma
+                  rota personalizada de estudos.
                 </p>
 
+                {/* (e) CTAs */}
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                   <Link
                     href="/onboarding"
@@ -65,7 +99,7 @@ export default function Home() {
                   </Link>
                 </div>
 
-                {/* Trust badges seguros */}
+                {/* (f) Trust badges */}
                 <div className="flex flex-wrap gap-x-4 gap-y-2 mt-10 pt-8 border-t border-border w-full">
                   <SafeBadge dot="brand">Grounding ativo em aulas reais</SafeBadge>
                   <SafeBadge dot="brand">Tutor adaptativo</SafeBadge>
@@ -74,11 +108,26 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Right: 3 pillars */}
-              <div className="lg:col-span-5 flex flex-col gap-3">
-                <PillarCard step="01" title="Diagnóstico" desc="Onboarding rápido e perguntas adaptativas mapeiam o que você ainda precisa aprender." />
-                <PillarCard step="02" title="Plano de estudos" desc="Combina trilhas e cursos reais do catálogo CEFIS com etapas conceituais." />
-                <PillarCard step="03" title="Tutor + Modo 10 min" desc="Responde dúvidas citando aula e timestamp. Síntese rápida quando o tempo aperta." />
+              {/* ───── Bloco direito: compass art + 2 PillarCards ───── */}
+              <div className="lg:col-span-5 flex flex-col items-center gap-6 order-2 lg:order-2">
+                {/* Compass art como âncora visual */}
+                <div className="relative flex items-center justify-center w-full">
+                  <CompassArt size={400} className="w-full max-w-[400px]" />
+                </div>
+
+                {/* 2 PillarCards visuais complementando */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 w-full max-w-[420px]">
+                  <PillarCard
+                    step="01"
+                    title="Diagnóstico + Plano"
+                    desc="Onboarding mapeia perfil. Plano combina trilhas e cursos reais com etapas conceituais."
+                  />
+                  <PillarCard
+                    step="02"
+                    title="Tutor + Modo 10 min"
+                    desc="Respostas citando aula e timestamp. Síntese rápida quando o tempo aperta."
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -221,11 +270,22 @@ export default function Home() {
 
       {/* ════════════ FOOTER ════════════ */}
       <footer className="border-t border-border">
-        <div className="container max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-6 flex flex-col sm:flex-row gap-2 justify-between text-xs text-muted-foreground">
-          <span>
-            Protótipo funcional de hackathon ·{" "}
-            <span className="text-foreground font-medium">CEFIS Hackathon de Inovação em Aprendizado</span>
-          </span>
+        <div className="container max-w-6xl mx-auto px-4 sm:px-6 lg:px-10 py-6 flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center text-xs text-muted-foreground">
+          <div className="flex items-center gap-2.5">
+            <Image
+              src="/logo-cefis.png"
+              alt="CEFIS"
+              width={20}
+              height={20}
+              className="opacity-70"
+            />
+            <span>
+              Protótipo funcional de hackathon ·{" "}
+              <span className="text-foreground font-medium">
+                CEFIS Hackathon de Inovação em Aprendizado
+              </span>
+            </span>
+          </div>
           <span>26 de maio de 2026 · Orlando</span>
         </div>
       </footer>
