@@ -269,10 +269,9 @@ Visão de produção como **feature nativa da CEFIS**, se a parceria avançar:
 
 ---
 
-## Equipe e processo
+## Processo
 
-- **Francisco Dias** conduziu produto, decisões estratégicas e apresentação
-- **Pedro Dias** apoiou testes em dispositivo real e análise crítica
+**Francisco Dias** conduziu produto, decisões estratégicas e apresentação.
 
 Usamos IA como copiloto técnico para acelerar desenvolvimento, revisão de código e documentação. O resultado é público e auditável: todos os commits estão no `main` deste repositório.
 

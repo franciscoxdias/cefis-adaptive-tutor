@@ -58,7 +58,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Glow card utility (Pedro/Manus reference) */
+/* Glow card utility */
 .glow-card {
   position: relative;
   background: var(--card);

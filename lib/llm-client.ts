@@ -32,7 +32,9 @@ export type ChatOptions = {
 
 const DEFAULT_MODELS: Record<LLMProvider, string> = {
   openai: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-  anthropic: process.env.ANTHROPIC_MODEL ?? "claude-haiku-4-5-20251001",
+  // Provider anthropic exige ANTHROPIC_MODEL explícito em runtime
+  // (não há default hardcoded pra evitar acoplamento a nome específico).
+  anthropic: process.env.ANTHROPIC_MODEL ?? "",
   groq: process.env.LLM_MODEL ?? "llama-3.3-70b-versatile",
 };
 
@@ -138,6 +140,9 @@ async function chatAnthropic(
   if (!key) throw new Error("ANTHROPIC_API_KEY ausente.");
 
   const model = options.model ?? DEFAULT_MODELS.anthropic;
+  if (!model) {
+    throw new Error("ANTHROPIC_MODEL ausente (defina via env var).");
+  }
 
   const body = {
     model,
